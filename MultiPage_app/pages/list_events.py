@@ -18,7 +18,7 @@ def display_booking_page():
         st.session_state.show_main = True  # Show the main event listing page
         st.rerun()  # Use st.rerun() to refresh the page
 
-# Function to display create event page
+# -----------------------------------Function to display create event page----------------------------------------------------------
 def display_create_event_page():
     st.markdown("<h3 style='text-align: center;'>Create Event</h3>", unsafe_allow_html=True)
     st.write("Here you can create new events.")
@@ -166,6 +166,8 @@ def display_summary_and_banking_page():
         st.session_state.show_create = False
         st.session_state.show_main = True
         st.rerun()  # Refresh the page to go back to the main event listing page
+
+#------------------
 
 # Main list events page logic
 def list_events_page():
