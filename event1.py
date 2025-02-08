@@ -21,18 +21,24 @@ def connect_to_database():
 # Fetch data from the database
 def fetch_events(connection, query, params):
     try:
-        # Use connection.cursor() for psycopg2 and execute the query directly
         with connection.cursor() as cursor:
             cursor.execute(query, params)
-            columns = [desc[0] for desc in cursor.description]
             data = cursor.fetchall()
-            return pd.DataFrame(data, columns=columns)
+            if cursor.description:
+                columns = [desc[0] for desc in cursor.description]
+            else:
+                columns = []
+            if data:
+                return pd.DataFrame(data, columns=columns)
+            else:
+                return pd.DataFrame(columns=columns)
     except Exception as e:
         st.error(f"Error fetching data: {e}")
         return pd.DataFrame()
 
 # Streamlit application
 def display_booking_page():
+    st.title("Event Finder")
 
     # Search bar and filters
     with st.container():
@@ -47,7 +53,7 @@ def display_booking_page():
         with col2:
             category = st.selectbox(
                 "Category",
-                ["All", "Charity Event", "Fashion Event", "Festival", "Art Event", "Social Event", "Sports", "Online Event", "Hybrid Event"]
+                ["All", "Charity Event", "Fashion Event", "Festival", "Art Event", "Social Event", "Sports", "Online Event", "Hybrid"]
             )
 
         with col3:
@@ -60,27 +66,30 @@ def display_booking_page():
     with st.container():
         connection = connect_to_database()
         if connection:
+            # Constructing the query dynamically based on selected filters
             query = """
                 SELECT e.event_title, e.description, e.start_date, e.start_time, c.category, l.city, l.province 
                 FROM "Events" e
                 INNER JOIN "Category" c ON e.category_id = c.category_id
                 INNER JOIN "Location" l ON e.location_id = l.location_id
-                WHERE (%s IS NULL OR e.event_title ILIKE '%%' || %s || '%%')
-                AND (%s IS NULL OR e.start_date = %s)
-                AND (%s IS NULL OR c.category = %s)
-                AND (%s IS NULL OR l.province = %s)
+                WHERE 1=1
             """
 
-            params = [
-                search_query if search_query else None,
-                search_query if search_query else None,
-                selected_date if selected_date else None,
-                selected_date if selected_date else None,
-                category if category != "All" else None,
-                category if category != "All" else None,
-                province if province != "All" else None,
-                province if province != "All" else None,
-            ]
+            params = []
+
+            # Add conditions based on filters
+            if search_query:
+                query += " AND e.event_title ILIKE %s"
+                params.append(f"%{search_query}%")
+            if selected_date:
+                query += " AND e.start_date = %s"
+                params.append(selected_date)
+            if category != "All":
+                query += " AND c.category = %s"
+                params.append(category)
+            if province != "All":
+                query += " AND l.province = %s"
+                params.append(province)
 
             events = fetch_events(connection, query, params)
 
@@ -97,7 +106,7 @@ def display_booking_page():
 
     # Navigation buttons at the bottom
     with st.container():
-        col1, col2 = st.columns(2)
+        col1, col2, _ = st.columns([1, 1, 6])
 
         with col1:
             if st.button("Cancel"):
