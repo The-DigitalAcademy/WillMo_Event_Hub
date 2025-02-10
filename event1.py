@@ -92,6 +92,7 @@ def display_booking_page():
     # Fetch and display events
     connection = connect_to_database()
     if connection:
+        # Note: We now include "e.event_id" and "e.price" and "e.quantity" in the SELECT list.
         query = """
             SELECT e.event_id, e.event_title, e.image, e.start_date, e.start_time, e.price, e.quantity,
                    c.category, l.city, l.province 
@@ -101,6 +102,8 @@ def display_booking_page():
             WHERE 1=1
         """
         params = []
+
+        # Append filters dynamically
         if search_query:
             query += " AND e.event_title ILIKE %s"
             params.append(f"%{search_query}%")
@@ -115,6 +118,7 @@ def display_booking_page():
             params.append(province)
 
         events = fetch_events(connection, query, params)
+
         if not events.empty:
             st.write(f"Found {len(events)} events:")
             # Display events in a grid (3 cards per row)
@@ -123,9 +127,9 @@ def display_booking_page():
                 cols = st.columns(3)
                 for col, (_, event) in zip(cols, row_events.iterrows()):
                     with col:
-                        # Each event card is clickable; it sets the event_id in the URL.
+                        # Wrap the entire card in an anchor tag that passes the event_id.
                         st.markdown(f"""
-                            <a href="?event_id={event['event_id']}" style="text-decoration: none; color: inherit;">
+                            <a href="/?event_id={event['event_id']}" style="text-decoration: none; color: inherit;">
                                 <div class="event-card">
                                     <img src="{event['image']}" alt="Event Image">
                                     <h3>{event['event_title']}</h3>
@@ -152,6 +156,7 @@ def display_event_details_page(event_id):
     st.title("Event Details")
     connection = connect_to_database()
     if connection:
+        # Fetch additional fields such as description, venue_title, google_maps, price, quantity, and contact details
         query = """
             SELECT e.event_id, e.event_title, e.image, e.description, e.price, e.quantity, 
                    l.venue_title, l.province, l.city, l.google_maps,
@@ -179,6 +184,8 @@ def display_event_details_page(event_id):
             st.subheader("Ticket Information")
             st.write(f"**Price:** R{event['price']}")
             st.write(f"**Available Tickets:** {event['quantity']}")
+            
+            # Display contact information (if available)
             if pd.notna(event['contact']):
                 st.subheader("Contact Information")
                 st.write(f"**Name:** {event['name']} {event['surname']}")
@@ -190,62 +197,16 @@ def display_event_details_page(event_id):
     else:
         st.error("Could not connect to the database.")
 
-    # Back to events link
+    # Provide a back link to return to the events list
     st.markdown('<a href="/" style="text-decoration: none;">&larr; Back to Events</a>', unsafe_allow_html=True)
 
-    # "Book Now" button – use st.experimental_rerun to trigger a URL update.
-    if st.button("Book Now"):
-        # Trigger a rerun with updated query parameters
-        st.experimental_set_query_params(event_id=event_id, booking="1")
-        st.experimental_rerun()
+# --- Main Navigation: Switch Between the Booking and Details Pages ---
 
-# --- Page to Display the Booking Confirmation ---
+# Access query parameters
+query_params = st.experimental_get_query_params()
 
-def display_booking_confirmation_page(event_id):
-    st.title("Booking Confirmation")
-    connection = connect_to_database()
-    if connection:
-        query = """
-            SELECT e.event_id, e.event_title, e.price, e.quantity
-            FROM "Events" e
-            WHERE e.event_id = %s
-        """
-        params = [event_id]
-        event_df = fetch_events(connection, query, params)
-        if not event_df.empty:
-            event = event_df.iloc[0]
-            st.write(f"**Event:** {event['event_title']}")
-            st.write(f"**Price:** R{event['price']}")
-            st.write(f"**Available Tickets:** {event['quantity']}")
-
-            # Booking form
-            with st.form("booking_form"):
-                full_name = st.text_input("Full Name")
-                email = st.text_input("Email")
-                phone = st.text_input("Phone Number")
-                ticket_quantity = st.number_input(
-                    "Number of Tickets", min_value=1, max_value=event['quantity'], value=1
-                )
-                submit_button = st.form_submit_button("Confirm Booking")
-
-            if submit_button:
-                # Here you would insert booking details into the database
-                st.success(f"Booking confirmed for {full_name}. You will receive a confirmation email shortly.")
-        else:
-            st.error("Event not found.")
-    else:
-        st.error("Could not connect to the database.")
-
-    # Back to events link
-    st.markdown('<a href="/" style="text-decoration: none;">&larr; Back to Events</a>', unsafe_allow_html=True)
-
-# --- Main Navigation: Switch Between Pages Based on Query Parameters ---
-
-query_params = st.query_params
-
-if "booking" in query_params and "event_id" in query_params:
-    display_booking_confirmation_page(query_params["event_id"][0])
-elif "event_id" in query_params:
+# Check if there's an "event_id" parameter in the query params
+if "event_id" in query_params:
     display_event_details_page(query_params["event_id"][0])
 else:
     display_booking_page()
