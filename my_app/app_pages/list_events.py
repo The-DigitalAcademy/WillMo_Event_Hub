@@ -1,9 +1,12 @@
 import streamlit as st
+from app_pages.book import book
+from app_pages.create import create
 
-# Button to navigate to the 'book.py' page
-if st.button("Home"):
-    st.switch_page("your_app.py")
-if st.button("Page 1"):
-    st.switch_page("pages/page_1.py")
-if st.button("Page 2"):
-    st.switch_page("pages/page_2.py")
+def list_events():
+    st.title("List of Events")
+
+
+if st.button("Go to Book"):
+        book()
+if st.button("Go to Create"):
+        create()
