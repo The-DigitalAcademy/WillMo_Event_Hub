@@ -1,6 +1,6 @@
 import streamlit as st
-from app_pages.create import create
-from app_pages.book import book
+from app_page.create import create
+from app_page.book import book
 
 # Define the main navigation function
 def list_events():
