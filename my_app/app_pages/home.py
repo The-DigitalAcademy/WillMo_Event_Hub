@@ -1,12 +1,8 @@
 import streamlit as st
 
 def home():
-
-st.title("WillMo Events Hub")
-
-
-# Search for an event by title and location
-st.subheader("Search for an Event")
+     st.title("WillMo Events Hub")
+     st.subheader("Search for an Event")
 
 
 # List of major South African cities for location filter
@@ -28,7 +24,7 @@ south_african_cities = [
     "Rustenburg",
     "Mbombela",
     "Tshwane",
-]
+      ]
 
 # Text input for event title
 event_title_search = st.text_input("Search by event title", "")
