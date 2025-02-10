@@ -18,14 +18,11 @@ def display_booking_page():
         st.session_state.show_main = True  # Show the main event listing page
         st.rerun()  # Use st.rerun() to refresh the page
 
-<<<<<<< HEAD
-# -----------------------------------Function to display create event page----------------------------------------------------------
-=======
+
 # ------------------------------Function to display create event page---------------------------------------------------------
 #Ticket: William
 #Date: 2025-02-06
 
->>>>>>> Wills
 def display_create_event_page():
     st.markdown("<h3 style='text-align: center;'>Create Event</h3>", unsafe_allow_html=True)
     st.write("Here you can create new events.")
