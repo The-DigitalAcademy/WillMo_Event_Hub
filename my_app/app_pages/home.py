@@ -4,6 +4,9 @@ def home():
      st.title("WillMo Events Hub")
      st.subheader("Search for an Event")
 
+if __name__ == "__page__":
+    home()
+
 
 # List of major South African cities for location filter
 south_african_cities = [
@@ -35,5 +38,3 @@ location_search = st.selectbox("Filter by location", south_african_cities)
 #  Empty events section with a placeholder for now
 st.subheader("Upcoming Events")
 
-if __name__ == "__page__":
-    home()
