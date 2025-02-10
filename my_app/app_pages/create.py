@@ -156,10 +156,6 @@ def display_summary_and_banking_page():
         else:
             st.error("Please fill in all banking details before submitting.")
 
-#-------------------------------------------Ticket: William--------------------------------------------------------------
-
-#------------------
-
 # Main list events page logic
 def list_events_page():
     # Centering the main content
