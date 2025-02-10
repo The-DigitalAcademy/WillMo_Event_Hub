@@ -2,9 +2,9 @@ import streamlit as st
 from datetime import datetime
 from pages.events import get_upcoming_events
 
-image_path = "/Users/tshmacm1172/Downloads/WillMo.jpg"
-st.image(image_path, width=290)
-#st.set_page_config(page_title="Willcome to WillMo Events", page_icon="🧊", layout="wide")
+#image_path = "/Users/tshmacm1172/Downloads/WillMo.jpg"
+#st.image(image_path, width=290)
+#st.set_page_config(page_title="Willcome to WillMo Events",  layout="wide")
 
 st.title("WillMo Events Hub")
 

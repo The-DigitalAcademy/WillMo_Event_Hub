@@ -18,7 +18,14 @@ def display_booking_page():
         st.session_state.show_main = True  # Show the main event listing page
         st.rerun()  # Use st.rerun() to refresh the page
 
+<<<<<<< HEAD
 # -----------------------------------Function to display create event page----------------------------------------------------------
+=======
+# ------------------------------Function to display create event page---------------------------------------------------------
+#Ticket: William
+#Date: 2025-02-06
+
+>>>>>>> Wills
 def display_create_event_page():
     st.markdown("<h3 style='text-align: center;'>Create Event</h3>", unsafe_allow_html=True)
     st.write("Here you can create new events.")
@@ -80,6 +87,15 @@ def display_create_event_page():
         st.session_state.show_upload_picture = True
         st.session_state.show_create = False  # Hide the create event page
         st.rerun()  # Refresh the page to go to the upload picture page
+    
+def display_congratulations_page():
+    st.markdown("<h3 style='text-align: center;'>🎉 Congratulations 🎉</h3>", unsafe_allow_html=True)
+    st.write("Your event has been successfully created!")
+    
+    if st.button("Get Back to Event List"):
+        st.session_state.show_congratulations = False
+        st.session_state.show_main = True
+        st.rerun()
 
     # Back Button to go to event list page
     if st.button("Back to Event List"):
@@ -88,7 +104,7 @@ def display_create_event_page():
         st.session_state.show_main = True  # Show the main event listing page
         st.rerun()  # Use st.rerun() to refresh the content
 
-# Function to display upload picture page
+
 def display_upload_picture_page():
     st.markdown("<h3 style='text-align: center;'>Upload Event Picture</h3>", unsafe_allow_html=True)
     st.write("Upload a picture for your event.")
@@ -112,7 +128,7 @@ def display_upload_picture_page():
         st.session_state.show_upload_picture = False  # Hide the upload picture page
         st.rerun()  # Refresh the page to go to the summary page
 
-# Function to display summary and banking details page
+
 def display_summary_and_banking_page():
     st.markdown("<h3 style='text-align: center;'>Event Summary & Banking Details</h3>", unsafe_allow_html=True)
 
@@ -138,34 +154,34 @@ def display_summary_and_banking_page():
     # Banking details input
     st.write("### Enter Your Banking Details")
     bank_account_number = st.text_input("Bank Account Number")
-    bank_name = st.text_input("Bank Name")
+
+    # Dropdown for South African banks
+    bank_name = st.selectbox(
+        "Bank Name",
+        ["ABSA", "Capitec Bank", "FNB (First National Bank)", "Nedbank", "Standard Bank", "Investec", "TymeBank", "African Bank", "Bidvest Bank", "Discovery Bank"]
+    )
+
     account_holder = st.text_input("Account Holder Name")
     branch_code = st.text_input("Branch Code")
 
     # Submit Button to finalize the event
     if st.button("Submit Event"):
-        st.write("Event has been successfully created and submitted!")
-        st.write(f"**Title:** {st.session_state.event_title}")
-        st.write(f"**Description:** {st.session_state.event_description}")
-        st.write(f"**Category:** {st.session_state.event_category}")
-        st.write(f"**Capacity:** {st.session_state.event_capacity}")
-        st.write(f"**Ticket Price:** {st.session_state.event_ticket_price} ZAR")
-        
-        if 'event_picture' in st.session_state:
-            st.write("Event picture uploaded successfully.")
-        
-        # Banking Details Confirmation
-        st.write("### Banking Details:")
-        st.write(f"**Bank Account Number:** {bank_account_number}")
-        st.write(f"**Bank Name:** {bank_name}")
-        st.write(f"**Account Holder Name:** {account_holder}")
-        st.write(f"**Branch Code:** {branch_code}")
+        if bank_account_number and account_holder and branch_code:
+            st.success("🎉 Event successfully created and banking details submitted! 🎉")
+            st.write(f"**Bank Account Number:** {bank_account_number}")
+            st.write(f"**Bank Name:** {bank_name}")
+            st.write(f"**Account Holder Name:** {account_holder}")
+            st.write(f"**Branch Code:** {branch_code}")
+            
+            # Reset session state for event creation
+            st.session_state.show_summary = False
+            st.session_state.show_create = False
+            st.session_state.show_main = True
+            st.rerun()  # Refresh to go back to the main page
+        else:
+            st.error("Please fill in all banking details before submitting.")
 
-        # Reset session state
-        st.session_state.show_summary = False
-        st.session_state.show_create = False
-        st.session_state.show_main = True
-        st.rerun()  # Refresh the page to go back to the main event listing page
+#-------------------------------------------Ticket: William--------------------------------------------------------------
 
 #------------------
 

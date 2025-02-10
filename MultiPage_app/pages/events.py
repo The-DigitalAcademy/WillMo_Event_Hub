@@ -1,16 +1,58 @@
+import streamlit as st
+import psycopg2 as ps
 from datetime import datetime
 
-# Sample list of upcoming events (replace with real data from a database or API later)
-upcoming_events = [
-    {"title": "Tech Conference 2025", "date": "2025-03-20", "location": "San Francisco, CA", "description": "A conference about the latest in tech."},
-    {"title": "Music Festival", "date": "2025-04-10", "location": "Los Angeles, CA", "description": "An unforgettable weekend of music."},
-    {"title": "Business Networking Gala", "date": "2025-05-15", "location": "New York, NY", "description": "Meet professionals and expand your network."},
-]
+# Database connection function
+def fetch_events():
+    """Fetch upcoming events from the database."""
+    try:
+        # Connect to PostgreSQL
+        connections = ps.connect(host='localhost',
+                          port='5432',
+                          database='willmo',
+                          user= 'postgres',
+                          password= '')
+        cursor = connections.cursor()
 
-# Function to get upcoming events
-def get_upcoming_events():
-    """Returns a list of upcoming events with dates on or after today."""
-    today = datetime.today().date()
-    return [event for event in upcoming_events if datetime.strptime(event["date"], "%Y-%m-%d").date() >= today]
+        # Fetch events from today onward
+        query = """
+        SELECT event_title, start_date, start_time, venue_title, city, province, description, event_url
+        FROM events
+        WHERE start_date >= %s
+        ORDER BY start_date;
+        """
+        cursor.execute(query, (datetime.today().strftime("%Y-%m-%d"),))
+        events = cursor.fetchall()
 
+        cursor.close()
+        connections.close()
 
+        return events
+
+    except Exception as e:
+        st.error(f"Error fetching events: {e}")
+        return []
+
+# Display events in the Streamlit app
+def display_events(events):
+    if events:
+        for event in events:
+            title, date, time, venue, city, province, description, url = event
+            st.subheader(title)
+            st.write(f"📅 {date} at ⏰ {time}")
+            st.write(f"📍 {venue}, {city}, {province}")
+            st.write(f"📝 {description}")
+            if url:
+                st.markdown(f"[More Info]({url})")
+            st.write("---")
+    else:
+        st.info("No upcoming events available.")
+
+# Main function
+def main():
+    st.title("Upcoming Events")
+    events = fetch_events()
+    display_events(events)
+
+if __name__ == "__main__":
+    main()
