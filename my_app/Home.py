@@ -1,11 +1,19 @@
 import streamlit as st
 from datetime import datetime
-from pages.events import get_upcoming_events
+
 
 #image_path = "/Users/tshmacm1172/Downloads/WillMo.jpg"
 #st.image(image_path, width=290)
 #st.set_page_config(page_title="Willcome to WillMo Events",  layout="wide")
+pages = [
+    st.Page("app_pages/admin.py", title="Admin", icon="👋"),
+   st.Page("app_pages/profile.py", title="Profile", icon="👋"),
+]
 
+# Adding pages to the sidebar navigation using st.navigation
+pg = st.navigation(pages, position="sidebar", expanded=True)
+# Running the app
+pg.run()
 st.title("WillMo Events Hub")
 
 
@@ -43,26 +51,4 @@ location_search = st.selectbox("Filter by location", south_african_cities)
 #  Empty events section with a placeholder for now
 st.subheader("Upcoming Events")
 
-# Fetch events from events.py
-events = get_upcoming_events()
 
-filtered_events = []
-
-for event in events:
-    # Check if event title matches the search or if location matches the selected filter
-    title_match = event_title_search.lower() in event['title'].lower() if event_title_search else True
-    location_match = location_search == "All Locations" or location_search in event['location']
-    
-    if title_match and location_match:
-        filtered_events.append(event)
-
-# Display the filtered events
-if filtered_events:
-    for event in filtered_events:
-        st.write(f"### {event['title']}")
-        st.write(f"**Date**: {event['date']}")
-        st.write(f"**Location**: {event['location']}")
-        st.write(f"**Description**: {event['description']}")
-        st.write("---")
-else:
-    st.write("No events match your search criteria. Please try different keywords or locations.")
