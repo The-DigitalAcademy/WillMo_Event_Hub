@@ -1,19 +1,7 @@
 import streamlit as st
-from datetime import datetime
 
+def home():
 
-#image_path = "/Users/tshmacm1172/Downloads/WillMo.jpg"
-#st.image(image_path, width=290)
-#st.set_page_config(page_title="Willcome to WillMo Events",  layout="wide")
-pages = [
-    st.Page("app_pages/admin.py", title="Admin", icon="👋"),
-   st.Page("app_pages/profile.py", title="Profile", icon="👋"),
-]
-
-# Adding pages to the sidebar navigation using st.navigation
-pg = st.navigation(pages, position="sidebar", expanded=True)
-# Running the app
-pg.run()
 st.title("WillMo Events Hub")
 
 
@@ -51,4 +39,5 @@ location_search = st.selectbox("Filter by location", south_african_cities)
 #  Empty events section with a placeholder for now
 st.subheader("Upcoming Events")
 
-
+if __name__ == "__page__":
+    home()
