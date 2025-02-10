@@ -5,7 +5,7 @@ def admin():
     # Check if an event has been created
     if 'event_created' not in st.session_state or not st.session_state['event_created']:
         st.write("You must create an event first. Redirecting to the event creation page...")
-        st.button("Go to Event Creation", on_click=go_to_create_page)
+        st.button("Go to Event Creation", on_click=create)
     else:
         st.write("Welcome to the Admin Page!")
         
