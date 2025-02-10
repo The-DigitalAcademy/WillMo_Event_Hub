@@ -25,11 +25,6 @@ def fetch_events(connection, query, params):
             cursor.execute(query, params)
             data = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
-            
-            # Debug: Print query results for inspection
-            print("Raw Data:", data)
-            print("Columns:", columns)
-
             if data:
                 return pd.DataFrame(data, columns=columns)
             else:
@@ -55,13 +50,15 @@ def display_booking_page():
         with col2:
             category = st.selectbox(
                 "Category",
-                ["All", "Charity Event", "Fashion Event", "Festival", "Art Event", "Social Event", "Sports", "Online Event", "Hybrid"]
+                ["All", "Charity Event", "Fashion Event", "Festival", "Art Event", 
+                 "Social Event", "Sports", "Online Event", "Hybrid Event"]
             )
 
         with col3:
             province = st.selectbox(
                 "Province",
-                ["All", "Gauteng", "KwaZulu-Natal", "Eastern Cape", "Free State", "Western Cape", "Northern Cape", "North West", "Mpumalanga", "Limpopo"]
+                ["All", "Gauteng", "KwaZulu-Natal", "Eastern Cape", "Free State", 
+                 "Western Cape", "Northern Cape", "North West", "Mpumalanga", "Limpopo"]
             )
 
     # Fetch and display events
@@ -70,7 +67,7 @@ def display_booking_page():
         if connection:
             # Constructing the query dynamically based on selected filters
             query = """
-                SELECT e.event_title, e.description, e.start_date, e.start_time, c.category, l.city, l.province 
+                SELECT e.event_title, e.image, e.start_date, e.start_time, c.category, l.city, l.province 
                 FROM "Events" e
                 INNER JOIN "Category" c ON e.category_id = c.category_id
                 INNER JOIN "Location" l ON e.location_id = l.location_id
@@ -86,7 +83,7 @@ def display_booking_page():
                 query += " AND e.start_date = %s"
                 params.append(selected_date)
             if category != "All":
-                query += " AND c.category = %s"
+                query += " AND LOWER(c.category) = LOWER(%s)"
                 params.append(category)
             if province != "All":
                 query += " AND l.province = %s"
@@ -96,15 +93,20 @@ def display_booking_page():
 
             if not events.empty:
                 st.write(f"Found {len(events)} events:")
-                for _, event in events.iterrows():
-                    st.subheader(event['event_title'])
-                    st.write(f"**Description:** {event['description']}")
-                    st.write(f"**Date:** {event['start_date']} at {event['start_time']}")
-                    st.write(f"**Category:** {event['category']}")
-                    st.write(f"**Location:** {event['city']}, {event['province']}")
-                    st.markdown("---")
+
+                # Display events in cards (3 cards per row)
+                for i in range(0, len(events), 3):
+                    row_events = events.iloc[i:i + 3]
+                    cols = st.columns(3)
+                    for col, (_, event) in zip(cols, row_events.iterrows()):
+                        with col:
+                            st.image(event['image'], use_column_width=True)
+                            st.subheader(event['event_title'])
+                            st.write(f"**Date and Time:** {event['start_date']} at {event['start_time']}")
+                            st.write(f"**Category:** {event['category']}")
+                            st.write(f"**Location:** {event['city']}, {event['province']}")
+                            st.markdown("---")
             else:
-                # Handle empty results
                 if selected_date:
                     st.info(f"No events found for the selected date: {selected_date}")
                 else:
