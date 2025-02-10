@@ -18,7 +18,7 @@ def admin():
         st.write(f"**Event Date:** {event_date}")
         st.write(f"**Event Description:** {event_description}")
 
-def go_to_create_page():
+def create():
     # Redirect to create.py page
     st.experimental_rerun()
 
