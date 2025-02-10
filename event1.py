@@ -24,10 +24,12 @@ def fetch_events(connection, query, params):
         with connection.cursor() as cursor:
             cursor.execute(query, params)
             data = cursor.fetchall()
-            if cursor.description:
-                columns = [desc[0] for desc in cursor.description]
-            else:
-                columns = []
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            
+            # Debug: Print query results for inspection
+            print("Raw Data:", data)
+            print("Columns:", columns)
+
             if data:
                 return pd.DataFrame(data, columns=columns)
             else:
@@ -48,7 +50,7 @@ def display_booking_page():
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            selected_date = st.date_input("Select Date")
+            selected_date = st.date_input("Select Date", value=None)
 
         with col2:
             category = st.selectbox(
@@ -74,7 +76,6 @@ def display_booking_page():
                 INNER JOIN "Location" l ON e.location_id = l.location_id
                 WHERE 1=1
             """
-
             params = []
 
             # Add conditions based on filters
@@ -94,6 +95,7 @@ def display_booking_page():
             events = fetch_events(connection, query, params)
 
             if not events.empty:
+                st.write(f"Found {len(events)} events:")
                 for _, event in events.iterrows():
                     st.subheader(event['event_title'])
                     st.write(f"**Description:** {event['description']}")
@@ -102,19 +104,11 @@ def display_booking_page():
                     st.write(f"**Location:** {event['city']}, {event['province']}")
                     st.markdown("---")
             else:
-                st.info("No events match your search criteria.")
-
-    # Navigation buttons at the bottom
-    with st.container():
-        col1, col2, _ = st.columns([1, 1, 6])
-
-        with col1:
-            if st.button("Cancel"):
-                st.write("Redirecting to homepage...")
-
-        with col2:
-            if st.button("Next"):
-                st.write("Navigating to the next page...")
+                # Handle empty results
+                if selected_date:
+                    st.info(f"No events found for the selected date: {selected_date}")
+                else:
+                    st.info("No events match your search criteria.")
 
 # Run the app
 display_booking_page()

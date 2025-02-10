@@ -43,7 +43,7 @@ FOREIGN KEY ("location_id") REFERENCES "Location" ("location_id"),
 FOREIGN KEY ("category_id") REFERENCES "Category" ("category_id")
 );
 
-CREATE TABLE "CustomersType" (
+CREATE TABLE "CustomerType" (
   "type_id" integer,
   "password" varchar,
   FOREIGN KEY ("type_id") REFERENCES "Type" ("type_id"),
