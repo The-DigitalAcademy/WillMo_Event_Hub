@@ -129,3 +129,4 @@ def display_booking_page():
                 st.info("No events match your search criteria.")
     else:
         st.error("Could not connect to the database.")
+

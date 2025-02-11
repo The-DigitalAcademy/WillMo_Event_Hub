@@ -1,31 +1,12 @@
 import streamlit as st
 import psycopg2
+from establish_connection import connect_to_database
 
-# Database connection settings
-DB_HOST = "localhost"
-DB_NAME = "willmo"
-DB_USER = "postgres"
-DB_PASSWORD = "Will"
-DB_PORT = "5432"  
 
-def connect_to_db():
-    """Connect to PostgreSQL database."""
-    try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port=DB_PORT
-        )
-        return conn
-    except Exception as e:
-        st.error(f"Error connecting to the database: {e}")
-        return None
 
 def insert_event_data(event_data):
     """Insert event data into multiple database tables."""
-    conn = connect_to_db()
+    conn = connect_to_database()
     if conn:
         try:
             cursor = conn.cursor()
