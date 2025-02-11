@@ -62,7 +62,7 @@ def event_form():
     st.title("Create an Event")
 
     
-    event_category = st.selectbox("Event Category", ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival"])
+    event_category = st.selectbox("Category", ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashinon Event"])
 
     
     title = st.text_input("Event Title")
@@ -70,17 +70,14 @@ def event_form():
     capacity = st.number_input("Capacity", min_value=1, step=1)
     ticket_price = st.number_input("Ticket Price (ZAR)", min_value=0.0, step=0.01)
 
-    #"
-    venue_disabled = event_category == "Online Event"
-    venue_title = st.text_input("Venue Title", disabled=venue_disabled)
-    google_maps_location = st.text_input("Google Maps Location", disabled=venue_disabled)
-    if google_maps_location:
-       google_maps_url = f"https://www.google.com/maps/search/?q={google_maps_location}"
-       st.markdown(f"[Click to view location on Google Maps]({google_maps_url})", unsafe_allow_html=True)
 
-    city = st.text_input("City", disabled=venue_disabled)
-    province = st.text_input("Province", disabled=venue_disabled)
-    event_url = st.text_input("Event URL")
+   
+    venue_title = st.text_input("Venue Title", disabled=event_category == "Online Event")
+    google_maps_location = st.text_input("Google Maps Location", disabled=event_category == "Online Event")
+
+    city = st.text_input("City", disabled=event_category == "Online Event")
+    province = st.text_input("Province", disabled=event_category == "Online Event")
+    event_url = st.text_input("Event URL",disabled=event_category == ["Art Event", "Social Event", "Sports",  "Festival", "Fashinon Event"])
 
     start_date = st.date_input("Start Date")
     start_time = st.time_input("Start Time")
