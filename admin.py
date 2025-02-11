@@ -38,7 +38,8 @@ def admin_dashboard():
     if not event_data:
         st.warning("No events created. Please create an event first.")
         if st.button("Go to Event Creation Page"):
-            st.experimental_set_query_params(page="create_event")
+            # Use st.query_params instead of st.experimental_set_query_params
+            st.session_state.query_params = {"page": "create_event"}
     else:
         # Convert data to DataFrame for display
         event_df = pd.DataFrame(event_data, columns=[
