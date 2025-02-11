@@ -67,7 +67,7 @@ def insert_event_data(event_data):
             ))
 
             conn.commit()
-            st.success("🎉 Event successfully created and stored in the database!")
+            st.success(" Event successfully created and stored in the database!")
         
         except Exception as e:
             st.error(f"Error inserting event: {e}")
