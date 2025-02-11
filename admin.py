@@ -3,17 +3,18 @@ import psycopg2
 from establish_connection import connect_to_database
 import pandas as pd
 
-def fetch_event_data():
+def fetch_event_data(event_id):
+    """Fetch event data for the given event ID directly from the Events table."""
     conn = connect_to_database()
     if conn:
         try:
             cursor = conn.cursor()
             query = """
-                SELECT e.event_title, e.capacity, e.price, e.start_date, e.start_time, l.city, l.province
-                FROM "Events" e
-                JOIN "Location" l ON e.location_id = l.location_id
+                SELECT event_title, capacity, price, start_date, start_time, description, event_url
+                FROM "Events"
+                WHERE event_id = %s
             """
-            cursor.execute(query)
+            cursor.execute(query, (event_id,))
             rows = cursor.fetchall()
             cursor.close()
             conn.close()
@@ -32,18 +33,20 @@ def fetch_event_data():
 def admin_dashboard():
     st.title("Admin Dashboard")
 
-    # Fetch event data
-    event_data = fetch_event_data()
+    # Assuming the logged-in user has event_id = 1
+    event_id = 1
+
+    # Fetch event data for the specific event ID
+    event_data = fetch_event_data(event_id)
 
     if not event_data:
-        st.warning("No events created. Please create an event first.")
+        st.warning("No events found for this user. Please create an event first.")
         if st.button("Go to Event Creation Page"):
-            # Use st.query_params instead of st.experimental_set_query_params
             st.session_state.query_params = {"page": "create_event"}
     else:
         # Convert data to DataFrame for display
         event_df = pd.DataFrame(event_data, columns=[
-            "Event Title", "Capacity", "Price (ZAR)", "Start Date", "Start Time", "City", "Province"
+            "Event Title", "Capacity", "Price (ZAR)", "Start Date", "Start Time", "Description", "Event URL"
         ])
 
         st.subheader("Event Overview")
