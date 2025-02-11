@@ -130,3 +130,55 @@ def display_booking_page():
     else:
         st.error("Could not connect to the database.")
 
+
+# --- Page to Display the Details of a Specific Event ---
+
+def display_event_details_page(event_id):
+    st.title("Event Details")
+    connection = connect_to_database()
+    if connection:
+        query = """
+            SELECT e.event_id, e.event_title, e.image, e.description, e.price, e.quantity, 
+                   l.venue_title, l.province, l.city, l.google_maps,
+                   c.category, cu.contact, cu.name, cu.surname
+            FROM "Events" e
+            INNER JOIN "Category" c ON e.category_id = c.category_id
+            INNER JOIN "Location" l ON e.location_id = l.location_id
+            LEFT JOIN "CustomerMap" cm ON cm.event_id = e.event_id
+            LEFT JOIN "Customers" cu ON cu.password = cm.password
+            WHERE e.event_id = %s
+        """
+        params = [event_id]
+        event_df = fetch_events(connection, query, params)
+        if not event_df.empty:
+            event = event_df.iloc[0]
+            st.image(event['image'], use_column_width=True)
+            st.header(event['event_title'])
+            st.subheader("Description")
+            st.write(event['description'])
+            st.subheader("Location Details")
+            st.write(f"**Venue:** {event['venue_title']}")
+            st.write(f"**City:** {event['city']}")
+            st.write(f"**Province:** {event['province']}")
+            st.write(f"**Google Maps:** [View Location]({event['google_maps']})")
+            st.subheader("Ticket Information")
+            st.write(f"**Price:** R{event['price']}")
+            st.write(f"**Available Tickets:** {event['quantity']}")
+            
+            if pd.notna(event['contact']):
+                st.subheader("Contact Information")
+                st.write(f"**Name:** {event['name']} {event['surname']}")
+                st.write(f"**Contact Number:** {event['contact']}")
+            else:
+                st.write("No contact information available.")
+        else:
+            st.error("Event not found.")
+    else:
+        st.error("Could not connect to the database.")
+
+    # Back link and Book Now button
+    st.markdown('<a href="/" style="text-decoration: none;">&larr; Back to Events</a>', unsafe_allow_html=True)
+    if st.button("Book Now"):
+        st.session_state["page"] = "checkout"
+        st.session_state["event_id"] = event_id
+
