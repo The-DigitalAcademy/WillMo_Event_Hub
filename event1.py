@@ -49,7 +49,7 @@ def display_booking_page():
             category = st.selectbox(
                 "Category",
                 ["All", "Charity Event", "Fashion Event", "Festival", "Art Event", 
-                 "Social Event", "Sports", "Online Event", "Hybrid"]
+                 "Social Event", "Sports", "Online Event", "Hybrid Event"]
             )
         with col3:
             province = st.selectbox(
@@ -66,7 +66,7 @@ def display_booking_page():
             padding: 16px;
             margin: 10px;
             border-radius: 8px;
-            width: 220px;
+            width: 200px;
             height: 550px;
             display: flex;
             flex-direction: column;
@@ -92,7 +92,6 @@ def display_booking_page():
     # Fetch and display events
     connection = connect_to_database()
     if connection:
-        # Note: We now include "e.event_id" and "e.price" and "e.quantity" in the SELECT list.
         query = """
             SELECT e.event_id, e.event_title, e.image, e.start_date, e.start_time, e.price, e.quantity,
                    c.category, l.city, l.province 
@@ -103,7 +102,6 @@ def display_booking_page():
         """
         params = []
 
-        # Append filters dynamically
         if search_query:
             query += " AND e.event_title ILIKE %s"
             params.append(f"%{search_query}%")
@@ -121,20 +119,18 @@ def display_booking_page():
 
         if not events.empty:
             st.write(f"Found {len(events)} events:")
-            # Display events in a grid (3 cards per row)
             for i in range(0, len(events), 3):
                 row_events = events.iloc[i:i + 3]
                 cols = st.columns(3)
                 for col, (_, event) in zip(cols, row_events.iterrows()):
                     with col:
-                        # Wrap the entire card in an anchor tag that passes the event_id.
                         st.markdown(f"""
-                            <a href="/?event_id={event['event_id']}" style="text-decoration: none; color: inherit;">
+                            <a href="?event_id={event['event_id']}" style="text-decoration: none; color: inherit;">
                                 <div class="event-card">
                                     <img src="{event['image']}" alt="Event Image">
                                     <h3>{event['event_title']}</h3>
-                                    <p><strong>Date:</strong> {event['start_date']}</p>
-                                    <p><strong>Time:</strong> {event['start_time']}</p>
+                                    <p><strong>Date:</strong> {event['start_date']} </p>
+                                    <p><strong>Time:</strong> {event['start_time']} </p>
                                     <p><strong>Category:</strong> {event['category']}</p>
                                     <p><strong>Location:</strong> {event['city']}, {event['province']}</p>
                                     <p><strong>Price:</strong> R{event['price']}</p>
@@ -143,10 +139,7 @@ def display_booking_page():
                             </a>
                         """, unsafe_allow_html=True)
         else:
-            if selected_date:
-                st.info(f"No events found for the selected date: {selected_date}")
-            else:
-                st.info("No events match your search criteria.")
+            st.info("No events match your search criteria.")
     else:
         st.error("Could not connect to the database.")
 
@@ -156,7 +149,6 @@ def display_event_details_page(event_id):
     st.title("Event Details")
     connection = connect_to_database()
     if connection:
-        # Fetch additional fields such as description, venue_title, google_maps, price, quantity, and contact details
         query = """
             SELECT e.event_id, e.event_title, e.image, e.description, e.price, e.quantity, 
                    l.venue_title, l.province, l.city, l.google_maps,
@@ -185,7 +177,6 @@ def display_event_details_page(event_id):
             st.write(f"**Price:** R{event['price']}")
             st.write(f"**Available Tickets:** {event['quantity']}")
             
-            # Display contact information (if available)
             if pd.notna(event['contact']):
                 st.subheader("Contact Information")
                 st.write(f"**Name:** {event['name']} {event['surname']}")
@@ -197,16 +188,8 @@ def display_event_details_page(event_id):
     else:
         st.error("Could not connect to the database.")
 
-    # Provide a back link to return to the events list
+    # Back link and Book Now button
     st.markdown('<a href="/" style="text-decoration: none;">&larr; Back to Events</a>', unsafe_allow_html=True)
-
-# --- Main Navigation: Switch Between the Booking and Details Pages ---
-
-# Access query parameters
-query_params = st.experimental_get_query_params()
-
-# Check if there's an "event_id" parameter in the query params
-if "event_id" in query_params:
-    display_event_details_page(query_params["event_id"][0])
-else:
-    display_booking_page()
+    if st.button("Book Now"):
+        st.session_state["page"] = "checkout"
+        st.session_state["event_id"] = event_id
