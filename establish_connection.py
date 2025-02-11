@@ -3,16 +3,15 @@ import pandas as pd
 
 import streamlit as st
 
-  # Connect to the PostgreSQL database server
-connections = ps.connect(host='localhost',
-                          port='5432',
-                          database='willmo',
-                          user= 'postgres',
-                          password= '')
-
-#Inserting data into the database
-
-query = "SELECT * FROM willmo;"
-df = pd.read_sql_query(query, connections)
-connections.close()
-
+def connect_to_database():
+    try:
+        connection = ps.connect(
+            host='localhost',
+            port='5432',
+            database='willmo',
+            user='postgres',
+            password=''
+        )
+        return connection
+    except Exception as e:
+        st.error(f"Error connecting to the database: {e}")

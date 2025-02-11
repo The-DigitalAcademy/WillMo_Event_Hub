@@ -67,7 +67,7 @@ logo_path = "WillMo_Logo.jpg"  # Replace with the actual path to your logo
 logo = st.image(logo_path, width=290)  # Adjust the size of the logo
 
 # Use radio buttons in the sidebar to switch between Login and Register forms
-view = st.sidebar.radio("Select an option", ("Already have an account? Login", "Don't have an account? Register"))
+view = st.radio("Select an option", ("Already have an account? Login", "Don't have an account? Register"))
 
 # If the user selects "Login", show the login form
 if view == "Already have an account? Login":
