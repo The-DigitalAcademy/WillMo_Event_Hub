@@ -6,7 +6,7 @@ DB_HOST = "localhost"
 DB_NAME = "willmo"
 DB_USER = "postgres"
 DB_PASSWORD = "Will"
-DB_PORT = "5432"  # Default PostgreSQL port
+DB_PORT = "5432"  
 
 def connect_to_db():
     """Connect to PostgreSQL database."""
