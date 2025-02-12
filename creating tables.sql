@@ -65,3 +65,19 @@ CREATE TABLE "CustomerType" (
   FOREIGN KEY ("type_id") REFERENCES "Type" ("type_id"),
   FOREIGN KEY ("email") REFERENCES "Customers" ("email")
 );
+
+CREATE TABLE "CustomerMap" (
+  "email" varchar,
+  "event_id" integer,
+  FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
+    FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id")
+);
+
+CREATE TABLE "BookingEventMap" (
+  "booking_id" integer,
+  "event_id" integer,
+  FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id"),
+  FOREIGN KEY ("booking_id") REFERENCES "Bookings" ("booking_id")
+);
+
+
