@@ -37,8 +37,10 @@ CREATE TABLE "Events" (
   "price" float,
   "image" varchar,
   "event_url" varchar,
+  "organizer_id" int,
   FOREIGN KEY ("location_id") REFERENCES "Location" ("location_id"),
-  FOREIGN KEY ("category_id") REFERENCES "Category" ("category_id")
+  FOREIGN KEY ("category_id") REFERENCES "Category" ("category_id"),
+  FOREIGN KEY ("organizer_id") REFERENCES "Category" ("organizer_id")
 );
 
 CREATE TABLE "Cart" (
@@ -90,9 +92,7 @@ CREATE TABLE "Organizer" (
   "bank_account_number" varchar,
   "account_holder_name" varchar,
   "bank_code" varchar,
-  "event_id" integer,
   FOREIGN KEY ("contact") REFERENCES "Customers" ("contact"),
   FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
-   FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id")
 
 );
