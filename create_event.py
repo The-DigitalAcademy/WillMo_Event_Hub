@@ -19,7 +19,6 @@ def insert_event_data(event_data):
             category_query = '''
             INSERT INTO "Category" (category)
             VALUES (%s)
-            ON CONFLICT (category) DO NOTHING
             RETURNING category_id
             '''
             cursor.execute(category_query, (event_data['event_category'],))
@@ -50,7 +49,6 @@ def insert_event_data(event_data):
             conn.close()
 
 def event_form():
-    """Render event form."""
     st.title("Create an Event")
 
     # Initialize session state

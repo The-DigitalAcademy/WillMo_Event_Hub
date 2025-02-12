@@ -1,66 +1,128 @@
 import streamlit as st
-import psycopg2
-from establish_connection import connect_to_database
 import pandas as pd
+import psycopg2
+from sqlalchemy import create_engine
 
-def fetch_event_data(event_id):
-    """Fetch event data for the given event ID directly from the Events table."""
+# Function to connect to the PostgreSQL database
+def connect_to_database():
+    try:
+        engine = create_engine("postgresql://your_username:your_password@your_host/your_database")
+        conn = engine.raw_connection()
+        return conn
+    except Exception as e:
+        st.error(f"Database connection error: {e}")
+        return None
+
+# Fetch user data from the database
+def get_user_data(email):
     conn = connect_to_database()
     if conn:
         try:
-            cursor = conn.cursor()
-            query = """
-                SELECT event_title, capacity, price, start_date, start_time, description, event_url
-                FROM "Events"
-                WHERE event_id = %s
-            """
-            cursor.execute(query, (event_id,))
-            rows = cursor.fetchall()
-            cursor.close()
+            query = "SELECT * FROM users WHERE email = %s"
+            df = pd.read_sql(query, conn, params=(email,))
             conn.close()
-
-            if rows:
-                return rows
-            return None
-
+            return df
         except Exception as e:
-            st.error(f"Error fetching event data: {e}")
+            st.error(f"Error fetching user data: {e}")
             return None
 
-    st.error("Database connection failed.")
-    return None
+# Fetch created events from the database
+def get_created_events(email):
+    conn = connect_to_database()
+    if conn:
+        try:
+            query = "SELECT * FROM events WHERE email = %s"
+            df = pd.read_sql(query, conn, params=(email,))
+            conn.close()
+            return df
+        except Exception as e:
+            st.error(f"Error fetching created events: {e}")
+            return None
 
-def admin_dashboard():
-    st.title("Admin Dashboard")
+# Fetch booking history from the database
+def get_booking_history(email):
+    conn = connect_to_database()
+    if conn:
+        try:
+            query = "SELECT * FROM bookings WHERE email = %s"
+            df = pd.read_sql(query, conn, params=(email,))
+            conn.close()
+            return df
+        except Exception as e:
+            st.error(f"Error fetching booking history: {e}")
+            return None
 
-    # Assuming the logged-in user has event_id = 1
-    event_id = 1
+# Initialize session state for login
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_email" not in st.session_state:
+    st.session_state.user_email = None
 
-    # Fetch event data for the specific event ID
-    event_data = fetch_event_data(event_id)
+# Login Form
+if not st.session_state.logged_in:
+    st.subheader("Please Sign In or Register")
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
+    
+    if st.button("Login"):
+        user_data = get_user_data(email)
+        if user_data is not None and not user_data.empty:
+            if user_data.iloc[0]["password"] == password:
+                st.session_state.logged_in = True
+                st.session_state.user_email = email
+                st.success(f"Welcome {user_data.iloc[0]['name']} {user_data.iloc[0]['surname']}")
+                st.rerun()
+            else:
+                st.error("Invalid credentials. Please try again.")
+        else:
+            st.error("User not found. Please register.")
 
-    if not event_data:
-        st.warning("No events found for this user. Please create an event first.")
-        if st.button("Go to Event Creation Page"):
-            st.session_state.query_params = {"page": "create_event"}
+else:
+    user_data = get_user_data(st.session_state.user_email)
+    
+    if user_data is None or user_data.empty:
+        st.error("Error loading profile data.")
+        st.stop()
+
+    user = user_data.iloc[0]
+
+    # Display User Profile
+    st.title("User Profile")
+    st.image(user["image"], width=150)
+    st.subheader(f"{user['name']} {user['surname']}")
+    st.write(f"📧 Email: {user['email']}")
+    st.write(f"📞 Contact: {user['contact']}")
+    st.write(f"📍 Location: {user['city']}, {user['province']}")
+
+    # Display Created Events
+    created_events = get_created_events(user["email"])
+    if created_events is not None and not created_events.empty:
+        st.subheader("Your Created Events")
+        for _, event in created_events.iterrows():
+            st.markdown(f"### {event['event_title']}")
+            st.write(f"📍 Venue: {event['venue_title']} ({event['googlec_maps']})")
+            st.write(f"📅 Date: {event['start_date']} at {event['start_time']}")
+            st.write(f"💵 Price: R{event['price']}")
+            st.write(f"🎟 Tickets Sold: {event['quantity']} / {event['capacity']}")
+            st.image(event["image"], width=300)
+            st.markdown(f"[View Event]({event['event_url']})" if event["event_url"] else "")
+
     else:
-        # Convert data to DataFrame for display
-        event_df = pd.DataFrame(event_data, columns=[
-            "Event Title", "Capacity", "Price (ZAR)", "Start Date", "Start Time", "Description", "Event URL"
-        ])
+        st.info("No events created yet.")
 
-        st.subheader("Event Overview")
-        st.dataframe(event_df)
+    # Display Booking History
+    booked_events = get_booking_history(user["email"])
+    if booked_events is not None and not booked_events.empty:
+        st.subheader("Your Ticket History")
+        for _, event in booked_events.iterrows():
+            st.markdown(f"### {event['event_title']}")
+            st.write(f"📅 Booked on: {event['booking_date']}")
+            st.write(f"📍 Venue: {event['venue_title']}")
+            st.image(event["image"], width=300)
+    else:
+        st.info("No ticket bookings found.")
 
-        # Event Statistics
-        total_capacity = event_df["Capacity"].sum()
-        total_revenue = (event_df["Capacity"] * event_df["Price (ZAR)"]).sum()
-
-        st.metric("Total Capacity", total_capacity)
-        st.metric("Potential Revenue (ZAR)", total_revenue)
-
-        st.subheader("Event History")
-        st.dataframe(event_df)
-
-if __name__ == "__main__":
-    admin_dashboard()
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.user_email = None
+        st.rerun()
