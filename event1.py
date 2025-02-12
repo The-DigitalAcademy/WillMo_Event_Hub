@@ -180,3 +180,5 @@ def display_event_details_page(event_id):
     if st.button("Book Now"):
         st.session_state["page"] = "checkout"
         st.session_state["event_id"] = event_id
+
+display_booking_page()

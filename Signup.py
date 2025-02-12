@@ -1,4 +1,3 @@
-# Required Libraries
 import bcrypt
 import psycopg2 as ps
 import streamlit as st
@@ -14,10 +13,9 @@ connection = ps.connect(
     password=''
 )
 
-# checking email and contact exist in database
+# Checking if email or contact exists in the database
 def is_email_or_contact_exists(email, contact):
     with connection.cursor() as cursor:
-       
         cursor.execute('SELECT * FROM "Customers" WHERE email = %s', (email,))
         email_result = cursor.fetchone()
 
@@ -26,13 +24,12 @@ def is_email_or_contact_exists(email, contact):
 
         return email_result is not None or contact_result is not None
 
-# validate email format
+# Validate email format
 def is_valid_email(email):
-
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(email_regex, email) is not None
 
-
+# Register user function
 def register_user(contact, name, surname, email, password):
     with connection.cursor() as cursor:
         # Hash the password before storing it
@@ -54,17 +51,18 @@ def login_user(email, password):
         user = cursor.fetchone()
 
         if user:
-            stored_password = user[4]  # becaus password is in the 5th column (index 4)
+            stored_password = user[4]  # because password is in the 5th column (index 4)
             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 st.success("Logged in successfully!")
-                switch_page("Home")
+                st.session_state["logged_in"] = True
+                st.session_state["email"] = email  # Store the user's email
+                switch_page("Home")  # Redirect to home page after login
             else:
                 st.error("Incorrect password!")
         else:
             st.error("User with this email not found!")
 
-
-logo_path = "WillMo_Logo.jpg"  
+logo_path = "WillMo_Logo.jpg"
 logo = st.image(logo_path, width=290)
 
 # Use radio buttons to switch between Login and Register forms
@@ -130,8 +128,11 @@ elif view == "Don't have an account? Register":
             else:
                 # Register the user if all validations pass
                 register_user(contact, name, surname, reg_email, reg_password)
-                st.session_state.registration_success = True
+                st.session_state["registration_success"] = True
 
     if 'registration_success' in st.session_state and st.session_state.registration_success:
         st.success(f"Registration successful! Welcome, {name}.")
         st.session_state.registration_success = False
+        st.session_state["logged_in"] = True  # Automatically log in the user after registration
+        st.session_state["email"] = reg_email  # Store the user's email
+        switch_page("Home")  # Redirect to home page after successful registration
