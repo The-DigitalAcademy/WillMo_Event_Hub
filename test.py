@@ -140,7 +140,7 @@ def display_cart_page():
                     # Display cart item with small image, quantity, and price
                     col1, col2, col3 = st.columns([1, 3, 1])
                     with col1:
-                        st.image(image, width=50)  # Small event image
+                        st.image(image, width=50) 
                     with col2:
                         st.write(f"**{event_title}**")
                         st.write(f"**Quantity:** {quantity}")
