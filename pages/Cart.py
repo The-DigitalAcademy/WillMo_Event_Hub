@@ -17,6 +17,23 @@ def update_event_quantity(event_id, quantity_change):
     else:
         st.error("Database connection failed.")
 
+# --- Function to Check Available Event Quantity ---
+def get_event_quantity(event_id):
+    connection = connect_to_database()
+    if connection:
+        query = """SELECT quantity FROM "Events" WHERE event_id = %s"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query, (event_id,))
+                available_quantity = cursor.fetchone()
+                return available_quantity[0] if available_quantity else 0
+        except Exception as e:
+            st.error(f"Error fetching event quantity: {e}")
+            return 0
+    else:
+        st.error("Database connection failed.")
+        return 0
+
 # --- Function to Add Event to Cart ---
 def add_to_cart(event_id, quantity, event_title, price):
     if "cart" not in st.session_state:
@@ -24,6 +41,12 @@ def add_to_cart(event_id, quantity, event_title, price):
     
     # Check if event is already in cart and update its quantity if needed
     event_in_cart = next((item for item in st.session_state["cart"] if item["event_id"] == event_id), None)
+    
+    # Check if enough tickets are available
+    available_quantity = get_event_quantity(event_id)
+    if available_quantity < quantity:
+        st.error(f"Only {available_quantity} tickets are available for this event.")
+        return
     
     if event_in_cart:
         event_in_cart["quantity"] += quantity
@@ -69,11 +92,13 @@ def display_cart_page():
 
     with col2:
         if st.button("Discard Tickets"):
-            # Update database: Increase the ticket quantity for each event removed
-            for item in st.session_state["cart"]:
-                update_event_quantity(item["event_id"], item["quantity"])  # Restore ticket quantity
-            st.session_state["cart"] = []  # Clear the cart
-            st.session_state["page"] = "events"
+            confirm_discard = st.radio("Are you sure you want to discard all tickets in the cart?", ("Yes", "No"))
+            if confirm_discard == "Yes":
+                # Update database: Increase the ticket quantity for each event removed
+                for item in st.session_state["cart"]:
+                    update_event_quantity(item["event_id"], item["quantity"])  # Restore ticket quantity
+                st.session_state["cart"] = []  # Clear the cart
+                st.session_state["page"] = "events"
 
 # --- Sidebar Cart Icon ---
 def display_cart_icon():
