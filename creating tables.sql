@@ -81,3 +81,18 @@ CREATE TABLE "BookingEventMap" (
   FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id"),
   FOREIGN KEY ("booking_id") REFERENCES "Bookings" ("booking_id")
 );
+
+CREATE TABLE "Organizer" (
+  "organizer_id" serial PRIMARY KEY,
+  "contact" varchar,
+  "email" varchar,
+  "bank_name" varchar,
+  "bank_account_number" varchar,
+  "account_holder_name" varchar,
+  "bank_code" varchar,
+  "event_id" integer,
+  FOREIGN KEY ("contact") REFERENCES "Customers" ("contact"),
+  FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
+   FOREIGN KEY ("event_id") REFERENCES "Events" ("email")
+
+);
