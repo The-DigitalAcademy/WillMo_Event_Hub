@@ -136,33 +136,62 @@ def event_form():
             st.session_state.show_event_form = False
 
     elif not st.session_state.show_event_form:
-        st.write("### Event Preview")
-        st.write(f"**Event Title:** {st.session_state.event_data['title']}")
-        st.write(f"**Category:** {st.session_state.event_data['event_category']}")
-        st.write(f"**Description:** {st.session_state.event_data['description']}")
-        st.write(f"**Capacity:** {st.session_state.event_data['capacity']}")
-        st.write(f"**Ticket Price (ZAR):** {st.session_state.event_data['ticket_price']}")
-        st.write(f"**Venue Title:** {st.session_state.event_data['venue_title']}")
-        st.write(f"**Google Maps Location:** {st.session_state.event_data['google_maps_location']}")
-        st.write(f"**City:** {st.session_state.event_data['city']}")
-        st.write(f"**Province:** {st.session_state.event_data['province']}")
-        st.write(f"**Start Date:** {st.session_state.event_data['start_date']}")
-        st.write(f"**Start Time:** {st.session_state.event_data['start_time']}")
-        st.write(f"**Event URL:** {st.session_state.event_data['event_url']}")
+        st.write("### Event Organizer Information")
+        name = st.text_input("Name")
+        email = st.text_input("Email")
+        phone_number = st.text_input("Phone Number")
+        bank_name = st.text_input("Bank Name")
+        bank_account_number = st.text_input("Bank Account Number")
+        account_holder_name = st.text_input("Account Holder Name") 
+        bank_code = st.text_input("Branch Code")
 
-        if st.button("Confirm and Create Event"):
-            # Insert event data into the database
-            insert_event_data(st.session_state.event_data)
-            
-            # Show success message with tracking link
-            st.success("Congratulations for creating a new event!")
-            st.write("You can now track the performance of your event by clicking the link below:")
-            st.markdown("[Track your event](#)")  # Replace '#' with actual tracking link
+        if st.button("Preview"):
+            # Save organizer information
+            st.session_state.event_data.update({
+                'organizer_name': name,
+                'email': email,
+                'phone_number': phone_number,
+                'bank_name': bank_name,
+                'bank_account_number': bank_account_number,
+                'account_holder_name': account_holder_name,
+                'bank_code': bank_code
+            })
 
-            st.session_state.show_event_form = True  # Reset for a new event
+            st.session_state.show_event_form = False
+            st.session_state.show_preview = True
 
-        elif st.button("Go Back to Edit Event"):
-            st.session_state.show_event_form = True  # Go back to event form
+    if 'show_preview' in st.session_state and st.session_state.show_preview:
+        st.write("### Preview Event Details")
+        event_data = st.session_state.event_data
+        
+        st.write(f"**Event Title**: {event_data['title']}")
+        st.write(f"**Category**: {event_data['event_category']}")
+        st.write(f"**Description**: {event_data['description']}")
+        st.write(f"**Capacity**: {event_data['capacity']}")
+        st.write(f"**Ticket Price (ZAR)**: {event_data['ticket_price']}")
+        st.write(f"**Start Date**: {event_data['start_date']}")
+        st.write(f"**Start Time**: {event_data['start_time']}")
+        
+        st.write("### Organizer Details")
+        st.write(f"**Name**: {event_data['organizer_name']}")
+        st.write(f"**Email**: {event_data['email']}")
+        st.write(f"**Phone Number**: {event_data['phone_number']}")
+        st.write(f"**Bank Name**: {event_data['bank_name']}")
+        st.write(f"**Bank Account Number**: {event_data['bank_account_number']}")
+        st.write(f"**Account Holder Name**: {event_data['account_holder_name']}")
+        st.write(f"**Bank Code**: {event_data['bank_code']}")
+        
+        if st.button("Confirm"):
+            insert_event_data(event_data)
+            st.session_state.show_preview = False
+            st.session_state.show_congratulations = True
 
-if __name__ == "__main__":
-    event_form()
+    if 'show_congratulations' in st.session_state and st.session_state.show_congratulations:
+        st.write("### Congratulations!")
+        st.write("Your event has been successfully created.")
+        st.write("You can now track the performance of your event by clicking the link below:")
+        st.markdown("[Track your event](#)")
+
+        # Reset for a new event
+        st.session_state.show_event_form = True
+        st.session_state.show_congratulations = False
