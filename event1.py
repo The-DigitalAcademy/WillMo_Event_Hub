@@ -132,9 +132,12 @@ def display_booking_page():
         st.error("Could not connect to the database.")
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> e1039442c333fc6a7744a60031404f4684508852
+=======
+>>>>>>> 12d6f3f2005ff12813ac7205c20c5370ec65b364
 # --- Page to Display the Details of a Specific Event ---
 
 def display_event_details_page(event_id):
@@ -150,10 +153,14 @@ def display_event_details_page(event_id):
             INNER JOIN "Location" l ON e.location_id = l.location_id
             LEFT JOIN "CustomerMap" cm ON cm.event_id = e.event_id
 <<<<<<< HEAD
+<<<<<<< HEAD
             LEFT JOIN "Customers" cu ON cu.password = cm.password
 =======
             LEFT JOIN "Customers" cu ON cu.email = cm.email
 >>>>>>> e1039442c333fc6a7744a60031404f4684508852
+=======
+            LEFT JOIN "Customers" cu ON cu.email = cm.email
+>>>>>>> 12d6f3f2005ff12813ac7205c20c5370ec65b364
             WHERE e.event_id = %s
         """
         params = [event_id]
@@ -190,6 +197,9 @@ def display_event_details_page(event_id):
         st.session_state["page"] = "checkout"
         st.session_state["event_id"] = event_id
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> e1039442c333fc6a7744a60031404f4684508852
+=======
+>>>>>>> 12d6f3f2005ff12813ac7205c20c5370ec65b364

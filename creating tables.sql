@@ -45,7 +45,11 @@ CREATE TABLE "Cart" (
   "cart_id" serial PRIMARY KEY,
   "email" varchar,
   "event_id" integer,
+<<<<<<< HEAD
   "quantity" integer,
+=======
+  "user_quantity" integer,
+>>>>>>> 12d6f3f2005ff12813ac7205c20c5370ec65b364
   FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
   FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id")
 );
@@ -65,8 +69,11 @@ CREATE TABLE "CustomerType" (
   FOREIGN KEY ("type_id") REFERENCES "Type" ("type_id"),
   FOREIGN KEY ("email") REFERENCES "Customers" ("email")
 <<<<<<< HEAD
+<<<<<<< HEAD
 );
 =======
+=======
+>>>>>>> 12d6f3f2005ff12813ac7205c20c5370ec65b364
 );
 
 CREATE TABLE "CustomerMap" (
@@ -84,4 +91,7 @@ CREATE TABLE "BookingEventMap" (
 );
 
 
+<<<<<<< HEAD
 >>>>>>> e1039442c333fc6a7744a60031404f4684508852
+=======
+>>>>>>> 12d6f3f2005ff12813ac7205c20c5370ec65b364
