@@ -2,16 +2,12 @@ import streamlit as st
 import psycopg2
 from establish_connection import connect_to_database
 
-
-
 def insert_event_data(event_data):
-    """Insert event data into multiple database tables."""
     conn = connect_to_database()
     if conn:
         try:
             cursor = conn.cursor()
-            
-            
+
             location_query = '''
             INSERT INTO "Location" (province, city, venue_title, google_maps)
             VALUES (%s, %s, %s, %s)
@@ -20,7 +16,6 @@ def insert_event_data(event_data):
             cursor.execute(location_query, (event_data['province'], event_data['city'], event_data['venue_title'], event_data['google_maps_location']))
             location_id = cursor.fetchone()[0]
 
-          
             category_query = '''
             INSERT INTO "Category" (category)
             VALUES (%s)
@@ -32,11 +27,9 @@ def insert_event_data(event_data):
             if category_result:
                 category_id = category_result[0]
             else:
-                
                 cursor.execute('SELECT category_id FROM "Category" WHERE category = %s', (event_data['event_category'],))
                 category_id = cursor.fetchone()[0]
 
-           
             event_query = '''
             INSERT INTO "Events" (capacity, start_date, start_time, description, event_title, location_id, category_id, price, event_url)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -48,8 +41,7 @@ def insert_event_data(event_data):
             ))
 
             conn.commit()
-            st.success(" Event successfully created and stored in the database!")
-        
+            
         except Exception as e:
             st.error(f"Error inserting event: {e}")
         
@@ -58,50 +50,72 @@ def insert_event_data(event_data):
             conn.close()
 
 def event_form():
-    """Render the event creation form in Streamlit."""
+    """Render event form."""
     st.title("Create an Event")
 
-    
-    event_category = st.selectbox("Event Category", ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival"])
+    # Initialize session state
+    if "show_event_form" not in st.session_state:
+        st.session_state.show_event_form = True
+    if "event_data" not in st.session_state:
+        st.session_state.event_data = {}
 
-    
-    title = st.text_input("Event Title")
-    description = st.text_area("Event Description")
-    capacity = st.number_input("Capacity", min_value=1, step=1)
-    ticket_price = st.number_input("Ticket Price (ZAR)", min_value=0.0, step=0.01)
+    if st.session_state.show_event_form:
+        event_category = st.selectbox("Category", ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashinon Event"])
+        title = st.text_input("Event Title")
+        description = st.text_area("Event Description")
+        capacity = st.number_input("Capacity", min_value=1, step=1)
+        ticket_price = st.number_input("Ticket Price (ZAR)", min_value=0.0, step=0.01)
+        venue_title = st.text_input("Venue Title", disabled=event_category == "Online Event")
+        google_maps_location = st.text_input("Google Maps Location", disabled=event_category == "Online Event")
+        city = st.text_input("City", disabled=event_category == "Online Event")
+        province = st.text_input("Province", disabled=event_category == "Online Event")
+        event_url = st.text_input("Event URL", disabled=event_category in ["Art Event", "Social Event", "Sports", "Festival", "Fashinon Event"])
+        start_date = st.date_input("Start Date")
+        start_time = st.time_input("Start Time")
 
-    #"
-    venue_disabled = event_category == "Online Event"
-    venue_title = st.text_input("Venue Title", disabled=venue_disabled)
-    google_maps_location = st.text_input("Google Maps Location", disabled=venue_disabled)
-    if google_maps_location:
-       google_maps_url = f"https://www.google.com/maps/search/?q={google_maps_location}"
-       st.markdown(f"[Click to view location on Google Maps]({google_maps_url})", unsafe_allow_html=True)
+        if st.button("Next"):
+            # Save event data in session state
+            st.session_state.event_data = {
+                'event_category': event_category,
+                'title': title,
+                'description': description,
+                'capacity': capacity,
+                'ticket_price': ticket_price,
+                'venue_title': venue_title,
+                'google_maps_location': google_maps_location,
+                'city': city,
+                'province': province,
+                'start_date': start_date,
+                'start_time': start_time,
+                'event_url': event_url
+            }
+            st.session_state.show_event_form = False
 
-    city = st.text_input("City", disabled=venue_disabled)
-    province = st.text_input("Province", disabled=venue_disabled)
-    event_url = st.text_input("Event URL")
+    else:
+        st.write("Event Organizer Information")
+        name = st.text_input("Name")
+        email = st.text_input("Email")
+        phone_number = st.text_input("Phone Number")
+        bank_name = st.text_input("Bank Name")
+        bank_account_number = st.text_input("Bank Account Number")
+        account_holder_name = st.text_input("Account Holder Name") 
+        bank_code = st.text_input("Branch Code")
 
-    start_date = st.date_input("Start Date")
-    start_time = st.time_input("Start Time")
-     
-    
-    if st.button("Create Event"):
-        event_data = {
-            'event_category': event_category,
-            'title': title,
-            'description': description,
-            'capacity': capacity,
-            'ticket_price': ticket_price,
-            'venue_title': venue_title,
-            'google_maps_location': google_maps_location,
-            'city': city,
-            'province': province,
-            'start_date': start_date,
-            'start_time': start_time,
-            'event_url': event_url
-        }
-        insert_event_data(event_data)
+        if st.button("Create Event"):
+            st.session_state.event_data.update({
+                'organizer_name': name,
+                'email': email,
+                'phone_number': phone_number,
+                'bank_name': bank_name,
+                'bank_account_number': bank_account_number,
+                'account_holder_name': account_holder_name,
+                'bank_code': bank_code
+            })
+            insert_event_data(st.session_state.event_data)
+            st.session_state.show_event_form = True  # Reset for a new event
+
+        elif st.button("Cancel"):
+            st.session_state.show_event_form = True  # Go back to event form
 
 if __name__ == "__main__":
     event_form()
