@@ -1,6 +1,6 @@
 import streamlit as st
 import psycopg2
-from my_app.my_pages.establish_connection import connect_to_database
+from establish_connection import connect_to_database
 
 def insert_event_data(event_data):
     conn = connect_to_database()
