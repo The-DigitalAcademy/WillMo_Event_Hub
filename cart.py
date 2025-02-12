@@ -2,6 +2,44 @@ import streamlit as st
 from event1 import display_booking_page, display_event_details_page
 from checkout import display_checkout_page
 
+def update_event_quantity(event_id, quantity_change):
+    connection = connect_to_database()
+    if connection:
+        query = """UPDATE "Events" SET quantity = quantity + %s WHERE event_id = %s"""
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query, (quantity_change, event_id))
+                connection.commit()
+        except Exception as e:
+            st.error(f"Error updating event quantity: {e}")
+    else:
+        st.error("Database connection failed.")
+
+# --- Function to Add Event to Cart ---
+def add_to_cart(event_id, quantity, event_title, price):
+    if "cart" not in st.session_state:
+        st.session_state["cart"] = []
+    
+    # Check if event is already in cart and update its quantity if needed
+    event_in_cart = next((item for item in st.session_state["cart"] if item["event_id"] == event_id), None)
+    
+    if event_in_cart:
+        event_in_cart["quantity"] += quantity
+        event_in_cart["subtotal"] = event_in_cart["quantity"] * price
+    else:
+        st.session_state["cart"].append({
+            "event_id": event_id,
+            "event_title": event_title,
+            "quantity": quantity,
+            "subtotal": quantity * price
+        })
+    
+    # Update event quantity in the database
+    update_event_quantity(event_id, -quantity)  # Decrease available tickets by quantity added to cart
+    
+    st.experimental_rerun()  # Refresh to show updated cart page
+
+# --- Display Cart Page ---
 def display_cart_page():
     if "cart" not in st.session_state or len(st.session_state["cart"]) == 0:
         st.write("Your cart is empty.")
@@ -30,12 +68,14 @@ def display_cart_page():
 
     with col2:
         if st.button("Discard Tickets"):
+            # Update database: Increase the ticket quantity for each event removed
+            for item in st.session_state["cart"]:
+                update_event_quantity(item["event_id"], item["quantity"])  # Restore ticket quantity
             st.session_state["cart"] = []  # Clear the cart
             st.write("Your cart has been emptied.")
             st.experimental_rerun()
 
-# --- Main Navigation: Switch Between the Booking, Details, Checkout, and Cart Pages ---
-
+# --- Main Navigation ---
 if "page" not in st.session_state:
     st.session_state["page"] = "events"
 

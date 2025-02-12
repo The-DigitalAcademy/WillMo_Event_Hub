@@ -45,7 +45,7 @@ CREATE TABLE "Cart" (
   "cart_id" serial PRIMARY KEY,
   "email" varchar,
   "event_id" integer,
-  "quantity" integer,
+  "user_quantity" integer,
   FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
   FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id")
 );
