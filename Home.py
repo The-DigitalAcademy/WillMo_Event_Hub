@@ -43,7 +43,7 @@ def get_upcoming_events():
     try:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT  l.province, l.city, e.price, e.event_url
+            SELECT  e.image, l.province, l.city, e.description, e.price, e.quantity, e.event_url
             , e.event_title, l.venue_title, e.start_date, e.start_time
             FROM "Events" as e
             LEFT JOIN "Location" as l
@@ -80,17 +80,47 @@ for event in events:
 
     if title_match and location_match:
         filtered_events.append(event)
+st.markdown("""
+        <style>
+        .event-card {
+            border: 1px solid #ccc;
+            padding: 16px;
+            margin: 10px;
+            border-radius: 8px;
+            width: 400px;
+            height: 500px;
+        }
+        .event-card img {
+            max-height: 200px;
+            margin-bottom: 10px;
+        }
+        .event-card h3 {
+            font-size: 1.2em;
+            margin-bottom: 8px;
+        }
+        .event-card p {
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-# Display filtered events
 if filtered_events:
-    for event in filtered_events:
-        st.write(f"### {event['event_title']}")
-        st.write(f"**Date**: {event['start_date']}")
-        st.write(f"**Time**: {event['start_time']}")
-        st.write(f"**Province:{event['province']}")
-        st.write(f"**City**: {event['city']}")
-        st.write(f"**Ticket Price:{event['price']}")
-        st.write(f"**Ticket Price:{event['event_url', 'N/A']}")
-        st.write(f"**Description**: {event.get('description', 'No description available')}")
+    cols = st.columns(3)  # Create 3 columns for each row
+    for idx, event in enumerate(filtered_events):
+        col = cols[idx % 3]  # Cycle through columns
+        with col:
+            st.markdown(f"""
+                                <div class="event-card">
+                                    <img src="{event['image']}" alt="Event Image">
+                                    <h3>{event['event_title']}</h3>
+                                    <p><strong>Date:</strong> {event['start_date']}</p>
+                                    <p><strong>Time:</strong> {event['start_time']}</p>
+                                    <p><strong>Location:</strong> {event['city']}, {event['province']}</p>
+                                    <p><strong>Price:</strong> R{event['price']}</p>
+                                    <p><strong>Available Tickets:</strong> {event['quantity']} </p>
+                                </div>
+                            </a>
+                        """, unsafe_allow_html=True)
 else:
     st.write("No events match your search criteria. Please try different keywords or locations.")
