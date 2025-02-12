@@ -3,6 +3,7 @@ import bcrypt
 import psycopg2 as ps
 import streamlit as st
 import re  # For email validation
+from streamlit_extras.switch_page_button import switch_page
 
 # Connect to the PostgreSQL database server
 connection = ps.connect(
@@ -35,7 +36,7 @@ def is_valid_email(email):
 def register_user(contact, name, surname, email, password):
     with connection.cursor() as cursor:
         # Hash the password before storing it
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         # Insert user data into the "Customers" table
         cursor.execute("""
@@ -56,6 +57,7 @@ def login_user(email, password):
             stored_password = user[4]  # becaus password is in the 5th column (index 4)
             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 st.success("Logged in successfully!")
+                switch_page("Home")
             else:
                 st.error("Incorrect password!")
         else:

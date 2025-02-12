@@ -1,7 +1,9 @@
 import streamlit as st
 from event1 import display_booking_page, display_event_details_page
 from checkout import display_checkout_page
+from establish_connection import connect_to_database
 
+# --- Function to Update Event Quantity ---
 def update_event_quantity(event_id, quantity_change):
     connection = connect_to_database()
     if connection:
@@ -37,7 +39,8 @@ def add_to_cart(event_id, quantity, event_title, price):
     # Update event quantity in the database
     update_event_quantity(event_id, -quantity)  # Decrease available tickets by quantity added to cart
     
-    st.experimental_rerun()  # Refresh to show updated cart page
+    # Update page state
+    st.session_state["page"] = "cart"
 
 # --- Display Cart Page ---
 def display_cart_page():
@@ -62,9 +65,7 @@ def display_cart_page():
     with col1:
         if st.button("Pay Now"):
             st.write("Proceeding to payment...")
-            # Redirect to a payment page or other action
-            st.session_state["page"] = "payment"
-            st.experimental_rerun()
+            st.session_state["page"] = "checkout"
 
     with col2:
         if st.button("Discard Tickets"):
@@ -72,12 +73,26 @@ def display_cart_page():
             for item in st.session_state["cart"]:
                 update_event_quantity(item["event_id"], item["quantity"])  # Restore ticket quantity
             st.session_state["cart"] = []  # Clear the cart
-            st.write("Your cart has been emptied.")
-            st.experimental_rerun()
+            st.session_state["page"] = "events"
+
+# --- Sidebar Cart Icon ---
+def display_cart_icon():
+    st.sidebar.markdown("### Your Cart")
+    
+    # Count the number of items in the cart
+    cart_count = sum(item["quantity"] for item in st.session_state.get("cart", []))
+    st.sidebar.write(f"🛒 Items in Cart: **{cart_count}**")
+    
+    # Add a button to navigate to the cart page
+    if st.sidebar.button("View Cart"):
+        st.session_state["page"] = "cart"
 
 # --- Main Navigation ---
 if "page" not in st.session_state:
     st.session_state["page"] = "events"
+
+# Display cart icon in sidebar
+display_cart_icon()
 
 if st.session_state["page"] == "events":
     query_params = st.query_params
