@@ -13,17 +13,20 @@ def insert_event_data(event_data):
             VALUES (%s, %s, %s, %s)
             RETURNING location_id
             '''
-            cursor.execute(location_query, (event_data['province'], event_data['city'], event_data['venue_title'], event_data['google_maps_location']))
+            cursor.execute(location_query, (
+                event_data['province'], event_data['city'], 
+                event_data['venue_title'], event_data['google_maps_location']
+            ))
             location_id = cursor.fetchone()[0]
 
             category_query = '''
             INSERT INTO "Category" (category)
             VALUES (%s)
-            ON CONFLICT (category) DO NOTHING
             RETURNING category_id
             '''
             cursor.execute(category_query, (event_data['event_category'],))
             category_result = cursor.fetchone()
+            
             if category_result:
                 category_id = category_result[0]
             else:
@@ -41,84 +44,42 @@ def insert_event_data(event_data):
             ))
 
             conn.commit()
-            
+            st.success("Event created successfully!")
         except Exception as e:
             st.error(f"Error inserting event: {e}")
-        
         finally:
             cursor.close()
             conn.close()
 
 def event_form():
-    
-    # Add custom CSS to style the page
-    st.markdown("""
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7fa;
-        }
-        .stButton>button {
-            background-color: #4CAF50;
-            color: white;
-            font-weight: bold;
-            border-radius: 5px;
-            padding: 10px 20px;
-            margin-top: 10px;
-        }
-        .stButton>button:hover {
-            background-color: #45a049;
-        }
-        .stSelectbox, .stTextInput, .stTextArea, .stNumberInput, .stDateInput, .stTimeInput {
-            width: 100%;
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .form-container {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .header {
-            text-align: center;
-            color: #333;
-            font-size: 24px;
-            font-weight: bold;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
     st.title("Create an Event")
-
-    # Initialize session state
-    if "show_event_form" not in st.session_state:
-        st.session_state.show_event_form = True
+    
+    if "step" not in st.session_state:
+        st.session_state.step = 1
     if "event_data" not in st.session_state:
         st.session_state.event_data = {}
 
-    if st.session_state.show_event_form:
+    if st.session_state.step == 1:
         st.write("### Event Details")
-        
         event_category = st.selectbox("Category", ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"])
         title = st.text_input("Event Title")
         description = st.text_area("Event Description")
         capacity = st.number_input("Capacity", min_value=1, step=1)
         ticket_price = st.number_input("Ticket Price (ZAR)", min_value=0.0, step=0.01)
-        venue_title = st.text_input("Venue Title", disabled=event_category == "Online Event")
-        google_maps_location = st.text_input("Google Maps Location", disabled=event_category == "Online Event")
-        city = st.text_input("City", disabled=event_category == "Online Event")
-        province = st.text_input("Province", disabled=event_category == "Online Event")
-        event_url = st.text_input("Event URL", disabled=event_category in ["Art Event", "Social Event", "Sports", "Festival", "Fashion Event"])
+        
+        if event_category != "Online Event":
+            venue_title = st.text_input("Venue Title")
+            google_maps_location = st.text_input("Google Maps Location")
+            city = st.text_input("City")
+            province = st.text_input("Province")
+        else:
+            venue_title, google_maps_location, city, province = None, None, None, None
+        
+        event_url = st.text_input("Event URL")
         start_date = st.date_input("Start Date")
         start_time = st.time_input("Start Time")
-
+        
         if st.button("Next"):
-            # Save event data in session state
             st.session_state.event_data = {
                 'event_category': event_category,
                 'title': title,
@@ -133,65 +94,40 @@ def event_form():
                 'start_time': start_time,
                 'event_url': event_url
             }
-            st.session_state.show_event_form = False
+            st.session_state.step = 2
 
-    elif not st.session_state.show_event_form:
+    elif st.session_state.step == 2:
         st.write("### Event Organizer Information")
         name = st.text_input("Name")
         email = st.text_input("Email")
         phone_number = st.text_input("Phone Number")
         bank_name = st.text_input("Bank Name")
         bank_account_number = st.text_input("Bank Account Number")
-        account_holder_name = st.text_input("Account Holder Name") 
+        account_holder_name = st.text_input("Account Holder Name")
         bank_code = st.text_input("Branch Code")
-
-        if st.button("Preview"):
-            # Save organizer information
+        
+        if st.button("Next"):
             st.session_state.event_data.update({
                 'organizer_name': name,
-                'email': email,
+                'organizer_email': email,
                 'phone_number': phone_number,
                 'bank_name': bank_name,
                 'bank_account_number': bank_account_number,
                 'account_holder_name': account_holder_name,
                 'bank_code': bank_code
             })
+            st.session_state.step = 3
 
-            st.session_state.show_event_form = False
-            st.session_state.show_preview = True
-
-    if 'show_preview' in st.session_state and st.session_state.show_preview:
-        st.write("### Preview Event Details")
-        event_data = st.session_state.event_data
+    elif st.session_state.step == 3:
+        st.write("### Event Preview")
+        for key, value in st.session_state.event_data.items():
+            st.write(f"**{key.replace('_', ' ').title()}:** {value}")
         
-        st.write(f"**Event Title**: {event_data['title']}")
-        st.write(f"**Category**: {event_data['event_category']}")
-        st.write(f"**Description**: {event_data['description']}")
-        st.write(f"**Capacity**: {event_data['capacity']}")
-        st.write(f"**Ticket Price (ZAR)**: {event_data['ticket_price']}")
-        st.write(f"**Start Date**: {event_data['start_date']}")
-        st.write(f"**Start Time**: {event_data['start_time']}")
-        
-        st.write("### Organizer Details")
-        st.write(f"**Name**: {event_data['organizer_name']}")
-        st.write(f"**Email**: {event_data['email']}")
-        st.write(f"**Phone Number**: {event_data['phone_number']}")
-        st.write(f"**Bank Name**: {event_data['bank_name']}")
-        st.write(f"**Bank Account Number**: {event_data['bank_account_number']}")
-        st.write(f"**Account Holder Name**: {event_data['account_holder_name']}")
-        st.write(f"**Bank Code**: {event_data['bank_code']}")
-        
-        if st.button("Confirm"):
-            insert_event_data(event_data)
-            st.session_state.show_preview = False
-            st.session_state.show_congratulations = True
+        if st.button("Confirm and Create Event"):
+            insert_event_data(st.session_state.event_data)
+            st.session_state.step = 1  # Reset after submission
+        elif st.button("Go Back to Edit Event"):
+            st.session_state.step = 1
 
-    if 'show_congratulations' in st.session_state and st.session_state.show_congratulations:
-        st.write("### Congratulations!")
-        st.write("Your event has been successfully created.")
-        st.write("You can now track the performance of your event by clicking the link below:")
-        st.markdown("[Track your event](#)")
-
-        # Reset for a new event
-        st.session_state.show_event_form = True
-        st.session_state.show_congratulations = False
+if __name__ == "__main__":
+    event_form()
