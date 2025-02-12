@@ -13,26 +13,25 @@ connection = ps.connect(
     password=''
 )
 
-# Function to check if email or contact already exists in the database
+# checking email and contact exist in database
 def is_email_or_contact_exists(email, contact):
     with connection.cursor() as cursor:
-        # Check if the email already exists
+       
         cursor.execute('SELECT * FROM "Customers" WHERE email = %s', (email,))
         email_result = cursor.fetchone()
 
-        # Check if the contact already exists
         cursor.execute('SELECT * FROM "Customers" WHERE contact = %s', (contact,))
         contact_result = cursor.fetchone()
 
         return email_result is not None or contact_result is not None
 
-# Function to validate email format
+# validate email format
 def is_valid_email(email):
-    # Expression for validating email
+
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(email_regex, email) is not None
 
-# Function to register a new user with password hashing
+
 def register_user(contact, name, surname, email, password):
     with connection.cursor() as cursor:
         # Hash the password before storing it
@@ -44,7 +43,7 @@ def register_user(contact, name, surname, email, password):
             VALUES (%s, %s, %s, %s, %s)
         """, (contact, name, surname, email, hashed_password))
 
-        # Commit the transaction to save the changes
+        # Commit to save the changes
         connection.commit()
 
 # Function to check if the login details are correct
@@ -54,7 +53,7 @@ def login_user(email, password):
         user = cursor.fetchone()
 
         if user:
-            stored_password = user[4]  # Assuming password is in the 5th column (index 4)
+            stored_password = user[4]  # becaus password is in the 5th column (index 4)
             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 st.success("Logged in successfully!")
             else:
@@ -62,11 +61,11 @@ def login_user(email, password):
         else:
             st.error("User with this email not found!")
 
-# Display the logo with adjusted size
-logo_path = "WillMo_Logo.jpg"  # Replace with the actual path to your logo
-logo = st.image(logo_path, width=290)  # Adjust the size of the logo
 
-# Use radio buttons in the sidebar to switch between Login and Register forms
+logo_path = "WillMo_Logo.jpg"  
+logo = st.image(logo_path, width=290)
+
+# Use radio buttons to switch between Login and Register forms
 view = st.radio("Select an option", ("Already have an account? Login", "Don't have an account? Register"))
 
 # If the user selects "Login", show the login form
@@ -129,8 +128,8 @@ elif view == "Don't have an account? Register":
             else:
                 # Register the user if all validations pass
                 register_user(contact, name, surname, reg_email, reg_password)
-                st.session_state.registration_success = True  # Track successful registration
+                st.session_state.registration_success = True
 
     if 'registration_success' in st.session_state and st.session_state.registration_success:
         st.success(f"Registration successful! Welcome, {name}.")
-        st.session_state.registration_success = False  # Reset the flag
+        st.session_state.registration_success = False
