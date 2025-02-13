@@ -1,132 +1,84 @@
 import streamlit as st
-from event1 import display_booking_page, display_event_details_page
-from checkout import display_checkout_page
-from establish_connection import connect_to_database
+from streamlit_extras.switch_page_button import switch_page
+import psycopg2
 
-# --- Function to Update Event Quantity ---
-def update_event_quantity(event_id, quantity_change):
-    connection = connect_to_database()
-    if connection:
-        query = """UPDATE "Events" SET quantity = quantity + %s WHERE event_id = %s"""
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(query, (quantity_change, event_id))
-                connection.commit()
-        except Exception as e:
-            st.error(f"Error updating event quantity: {e}")
+# Function to connect to the database
+def connect_to_database():
+    try:
+        connection = psycopg2.connect(
+            host='localhost',
+            port='5432',
+            database='willmo',  # Update this with your actual database name
+            user='postgres',     # Update this with your actual PostgreSQL username
+            password='Will'      # Update this with your actual PostgreSQL password
+        )
+        return connection
+    except Exception as e:
+        st.error(f"Error connecting to the database: {e}")
+
+# Function to display cart with a better layout
+def display_cart():
+    st.title("Your Cart")
+
+    # Connect to the database
+    conn = connect_to_database()
+    cursor = conn.cursor()
+
+    # Check if the cart is in the session state and has items
+    if "cart" in st.session_state and st.session_state.cart:
+        cart = st.session_state.cart
+        total_cart_price = 0  # Keep track of the total price
+
+        for i, item in enumerate(cart):
+            event_id = item.get('event_id')
+
+            # Fetch event details from the database
+            cursor.execute("SELECT event_title, image, price FROM Events WHERE event_id = %s", (event_id,))
+            event_details = cursor.fetchone()
+
+            if event_details:
+                event_title, event_image, price = event_details
+            else:
+                event_title, event_image, price = "Unknown Event", None, 0
+
+            quantity = item.get('quantity', 1)
+            total_price = price * quantity
+
+            with st.expander(f"Event: {event_title}"):  # Use expander for each item to show details
+                # Show the event details
+                if event_image:
+                    st.image(event_image, use_column_width=True)  # Display event image
+                st.write(f"**Quantity**: {quantity}")
+                st.write(f"**Price per Ticket**: R{price}")
+                st.write(f"**Total Price**: R{total_price}")
+
+                # Add a remove button for each item in the cart
+                if st.button(f"Remove Event {event_title}", key=f"remove_{i}"):
+                    # Remove item from cart and update the database
+                    st.session_state.cart.pop(i)
+                    cursor.execute(
+                        "DELETE FROM Cart WHERE email = %s AND event_id = %s",
+                        (st.session_state.user_email, item['event_id'])
+                    )
+                    conn.commit()  # Commit changes to the database
+                    st.success(f"Removed {event_title} from the cart.")
+                    st.experimental_rerun()  # Use rerun to refresh the page
+
+                total_cart_price += total_price  # Add to the total cart price
+
+        # Show the total cart price at the bottom
+        st.write(f"**Total Cart Price**: R{total_cart_price}")
+
     else:
-        st.error("Database connection failed.")
-
-# --- Function to Check Available Event Quantity ---
-def get_event_quantity(event_id):
-    connection = connect_to_database()
-    if connection:
-        query = """SELECT quantity FROM "Events" WHERE event_id = %s"""
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(query, (event_id,))
-                available_quantity = cursor.fetchone()
-                return available_quantity[0] if available_quantity else 0
-        except Exception as e:
-            st.error(f"Error fetching event quantity: {e}")
-            return 0
-    else:
-        st.error("Database connection failed.")
-        return 0
-
-# --- Function to Add Event to Cart ---
-def add_to_cart(event_id, quantity, event_title, price):
-    if "cart" not in st.session_state:
-        st.session_state["cart"] = []
-    
-    # Check if event is already in cart and update its quantity if needed
-    event_in_cart = next((item for item in st.session_state["cart"] if item["event_id"] == event_id), None)
-    
-    # Check if enough tickets are available
-    available_quantity = get_event_quantity(event_id)
-    if available_quantity < quantity:
-        st.error(f"Only {available_quantity} tickets are available for this event.")
-        return
-    
-    if event_in_cart:
-        event_in_cart["quantity"] += quantity
-        event_in_cart["subtotal"] = event_in_cart["quantity"] * price
-    else:
-        st.session_state["cart"].append({
-            "event_id": event_id,
-            "event_title": event_title,
-            "quantity": quantity,
-            "subtotal": quantity * price
-        })
-    
-    # Update event quantity in the database
-    update_event_quantity(event_id, -quantity)  # Decrease available tickets by quantity added to cart
-    
-    # Update page state
-    st.session_state["page"] = "cart"
-
-# --- Display Cart Page ---
-def display_cart_page():
-    if "cart" not in st.session_state or len(st.session_state["cart"]) == 0:
         st.write("Your cart is empty.")
-        return
 
-    st.header("Your Cart")
-    
-    total = 0
-    for item in st.session_state["cart"]:
-        st.subheader(item["event_title"])
-        st.write(f"**Quantity:** {item['quantity']}")
-        st.write(f"**Subtotal:** R{item['subtotal']}")
-        total += item["subtotal"]
-    
-    st.write(f"**Total Price:** R{total}")
-    
-    # Add buttons for actions
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("Pay Now"):
-            st.write("Proceeding to payment...")
-            st.session_state["page"] = "checkout"
+    # Button to proceed to checkout
+    if st.button("Pay Now"):
+        switch_page("pay")
 
-    with col2:
-        if st.button("Discard Tickets"):
-            confirm_discard = st.radio("Are you sure you want to discard all tickets in the cart?", ("Yes", "No"))
-            if confirm_discard == "Yes":
-                # Update database: Increase the ticket quantity for each event removed
-                for item in st.session_state["cart"]:
-                    update_event_quantity(item["event_id"], item["quantity"])  # Restore ticket quantity
-                st.session_state["cart"] = []  # Clear the cart
-                st.session_state["page"] = "events"
+    # Close connection
+    cursor.close()
+    conn.close()
 
-# --- Sidebar Cart Icon ---
-def display_cart_icon():
-    st.sidebar.markdown("### Your Cart")
-    
-    # Count the number of items in the cart
-    cart_count = sum(item["quantity"] for item in st.session_state.get("cart", []))
-    st.sidebar.write(f"🛒 Items in Cart: **{cart_count}**")
-    
-    # Add a button to navigate to the cart page
-    if st.sidebar.button("View Cart"):
-        st.session_state["page"] = "cart"
-
-# --- Main Navigation ---
-if "page" not in st.session_state:
-    st.session_state["page"] = "events"
-
-# Display cart icon in sidebar
-display_cart_icon()
-
-if st.session_state["page"] == "events":
-    query_params = st.query_params
-    if "event_id" in query_params:
-        st.session_state["event_id"] = query_params["event_id"][0]
-        display_event_details_page(query_params["event_id"][0])
-    else:
-        display_booking_page()
-elif st.session_state["page"] == "checkout":
-    display_checkout_page()
-elif st.session_state["page"] == "cart":
-    display_cart_page()
+# Display Cart
+display_cart()

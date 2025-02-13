@@ -4,6 +4,10 @@ import streamlit as st
 import re  # For email validation
 from streamlit_extras.switch_page_button import switch_page
 
+# Hide the sidebar on this page
+st.set_page_config(page_title="events", page_icon=":guardsman:", layout="wide")
+
+
 # Connect to the PostgreSQL database server
 connection = ps.connect(
     host='localhost',
