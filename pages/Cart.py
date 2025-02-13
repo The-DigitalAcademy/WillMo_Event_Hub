@@ -8,20 +8,25 @@ def connect_to_database():
         connection = psycopg2.connect(
             host='localhost',
             port='5432',
-            database='willmo',  # Update this with your actual database name
-            user='postgres',     # Update this with your actual PostgreSQL username
-            password='Will'      # Update this with your actual PostgreSQL password
+            database='willmo',  # Update with your actual database name
+            user='postgres',     # Update with your PostgreSQL username
+            password='Will'      # Update with your PostgreSQL password
         )
         return connection
     except Exception as e:
         st.error(f"Error connecting to the database: {e}")
+        return None
 
-# Function to display cart with a better layout
+# Function to display cart
 def display_cart():
     st.title("Your Cart")
 
     # Connect to the database
     conn = connect_to_database()
+    if not conn:
+        st.error("Unable to connect to the database. Please try again later.")
+        return
+
     cursor = conn.cursor()
 
     # Check if the cart is in the session state and has items
@@ -32,39 +37,75 @@ def display_cart():
         for i, item in enumerate(cart):
             event_id = item.get('event_id')
 
-            # Fetch event details from the database
-            cursor.execute("SELECT event_title, image, price FROM Events WHERE event_id = %s", (event_id,))
-            event_details = cursor.fetchone()
+            try:
+                # Fetch event details from the database
+                cursor.execute(
+                    'SELECT event_title, image, price FROM "Events" WHERE event_id = %s',
+                    (event_id,)
+                )
+                event_details = cursor.fetchone()
 
-            if event_details:
-                event_title, event_image, price = event_details
-            else:
-                event_title, event_image, price = "Unknown Event", None, 0
+                if event_details:
+                    event_title, event_image, price = event_details
+                else:
+                    event_title, event_image, price = "Unknown Event", None, 0
 
-            quantity = item.get('quantity', 1)
-            total_price = price * quantity
+                # Display event details
+                with st.expander(f"Event: {event_title}", expanded=False):
+                    if event_image:
+                        st.image(event_image, width=150)  # Smaller event image
 
-            with st.expander(f"Event: {event_title}"):  # Use expander for each item to show details
-                # Show the event details
-                if event_image:
-                    st.image(event_image, use_column_width=True)  # Display event image
-                st.write(f"**Quantity**: {quantity}")
-                st.write(f"**Price per Ticket**: R{price}")
-                st.write(f"**Total Price**: R{total_price}")
-
-                # Add a remove button for each item in the cart
-                if st.button(f"Remove Event {event_title}", key=f"remove_{i}"):
-                    # Remove item from cart and update the database
-                    st.session_state.cart.pop(i)
-                    cursor.execute(
-                        "DELETE FROM Cart WHERE email = %s AND event_id = %s",
-                        (st.session_state.user_email, item['event_id'])
+                    # Display current quantity and allow updates
+                    current_quantity = item.get("quantity", 1)
+                    new_quantity = st.number_input(
+                        f"Quantity for {event_title}",
+                        min_value=1,
+                        max_value=10,
+                        value=current_quantity,
+                        key=f"quantity_{i}"
                     )
-                    conn.commit()  # Commit changes to the database
-                    st.success(f"Removed {event_title} from the cart.")
-                    st.experimental_rerun()  # Use rerun to refresh the page
+
+                    # If quantity is updated, update the cart and database
+                    if new_quantity != current_quantity:
+                        st.session_state.cart[i]["quantity"] = new_quantity
+                        st.session_state.cart[i]["total_price"] = new_quantity * price
+
+                        # Update quantity in the database
+                        cursor.execute(
+                            'UPDATE "Cart" SET user_quantity = %s WHERE email = %s AND event_id = %s',
+                            (new_quantity, st.session_state.get("user_email", ""), event_id)
+                        )
+                        conn.commit()  # Commit changes to the database
+
+                        st.success(f"Updated quantity for {event_title} to {new_quantity}.")
+
+                    # Show prices
+                    total_price = new_quantity * price
+                    st.write(f"**Price per Ticket**: R{price}")
+                    st.write(f"**Total Price**: R{total_price}")
+
+                    # Add a remove button for each item
+                    if st.button(f"Remove {event_title}", key=f"remove_{i}"):
+                        # Remove item from cart
+                        st.session_state.cart.pop(i)
+
+                        # Remove item from the database
+                        cursor.execute(
+                            'DELETE FROM "Cart" WHERE email = %s AND event_id = %s',
+                            (st.session_state.get("user_email", ""), event_id)
+                        )
+                        conn.commit()  # Commit changes to the database
+                        st.success(f"Removed {event_title} from the cart.")
+
+                        # Refresh the page immediately
+                        st.experimental_rerun()
 
                 total_cart_price += total_price  # Add to the total cart price
+
+            except psycopg2.Error as e:
+                conn.rollback()  # Rollback transaction on error
+                st.error(f"Error fetching details for event ID {event_id}: {e}")
+                continue
 
         # Show the total cart price at the bottom
         st.write(f"**Total Cart Price**: R{total_cart_price}")
@@ -77,6 +118,56 @@ def display_cart():
         switch_page("pay")
 
     # Close connection
+    cursor.close()
+    conn.close()
+
+# Function to add an event to the cart
+def add_to_cart(event_id, event_title, quantity, price):
+    if "cart" not in st.session_state:
+        st.session_state.cart = []
+
+    conn = connect_to_database()
+    if not conn:
+        st.error("Unable to connect to the database.")
+        return
+
+    cursor = conn.cursor()
+
+    # Check if the event is already in the cart
+    for item in st.session_state.cart:
+        if item["event_id"] == event_id:
+            # Update the quantity and total price if event exists
+            item["quantity"] += quantity
+            item["total_price"] = item["quantity"] * price
+
+            # Update the quantity in the database
+            cursor.execute(
+                'UPDATE "Cart" SET user_quantity = %s WHERE email = %s AND event_id = %s',
+                (item["quantity"], st.session_state.get("user_email", ""), event_id)
+            )
+            conn.commit()  # Commit changes to the database
+
+            st.success(f"Updated quantity for {event_title}.")
+            cursor.close()
+            conn.close()
+            return
+
+    # Add new event to the cart
+    st.session_state.cart.append({
+        "event_id": event_id,
+        "event_title": event_title,
+        "quantity": quantity,
+        "total_price": price * quantity
+    })
+
+    # Insert new entry into the database
+    cursor.execute(
+        'INSERT INTO "Cart" (email, event_id, user_quantity) VALUES (%s, %s, %s)',
+        (st.session_state.get("user_email", ""), event_id, quantity)
+    )
+    conn.commit()  # Commit changes to the database
+
+    st.success(f"Added {event_title} to the cart.")
     cursor.close()
     conn.close()
 

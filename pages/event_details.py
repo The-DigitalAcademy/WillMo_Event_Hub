@@ -36,6 +36,11 @@ def fetch_event_details(event_id):
 
 # Event Details Page
 def display_event_details():
+    # Check if the user is logged in
+    if "logged_in" not in st.session_state or not st.session_state.logged_in:
+        switch_page("Signup")
+        return
+    
     # Get event ID from session state
     event_id = st.session_state.get("event_id", None)
 
@@ -43,23 +48,38 @@ def display_event_details():
         st.title("Event Details")
         event_details = fetch_event_details(event_id)
         if event_details:
-            st.image(event_details['image'], use_column_width=True)
+            # Display Event Image
+            st.image(event_details['image'], use_column_width=True, caption=None)
+
+            # Display Event Title
             st.header(event_details['event_title'])
+
+            # Event Description
             st.subheader("Description")
             st.write(event_details['description'])
+
+            # Event Location
             st.subheader("Location")
             st.write(f"**Venue:** {event_details['venue_title']}")
             st.write(f"**City:** {event_details['city']}, {event_details['province']}")
             st.write(f"**Google Maps:** [View Location]({event_details['google_maps']})")
+
+            # Ticket Information
             st.subheader("Ticket Information")
             st.write(f"**Price:** R{event_details['price']}")
             st.write(f"**Available Tickets:** {event_details['quantity']}")
 
-            if st.button("Book Now"):
-                switch_page("checkout")
+            # Booking Button and Back Button
+            col1, col2 = st.columns([3, 1])
 
-            if st.button("Go Back"):
-                switch_page("events")
+            with col1:
+                if st.button("Go Back", key="go_back"):
+                    switch_page("events")
+
+            with col2:
+                if st.button("Book Now", key="book_now"):
+                    switch_page("checkout")   
+
         else:
             st.error("Event details not found.")
     else:
