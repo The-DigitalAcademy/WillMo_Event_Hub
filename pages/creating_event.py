@@ -60,7 +60,6 @@ def create_event(event_title, description, start_date, start_time, capacity, qua
             cursor.execute("""
                 INSERT INTO "Organizer" (email, bank_name, bank_account_number, account_holder_name, bank_code)
                 VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (email) DO NOTHING
                 RETURNING organizer_id
             """, (organizer_email, bank_name, account_number, account_holder, bank_code))
             organizer_result = cursor.fetchone()
