@@ -48,18 +48,19 @@ CREATE TABLE "Events" (
   "image" varchar,
   "event_url" varchar,
   "organizer_id" integer,
+  "cart_id" integer,
   FOREIGN KEY ("location_id") REFERENCES "Location" ("location_id"),
   FOREIGN KEY ("category_id") REFERENCES "Category" ("category_id"),
-  FOREIGN KEY ("organizer_id") REFERENCES "Organizer" ("organizer_id")
+  FOREIGN KEY ("organizer_id") REFERENCES "Organizer" ("organizer_id"),
+  FOREIGN KEY ("cart_id") REFERENCES "Cart" ("cart_id"),
+  FOREIGN KEY ("booking_id") REFERENCES "Bookings" ("booking_id")
 );
 
 CREATE TABLE "Cart" (
   "cart_id" serial PRIMARY KEY,
   "email" varchar,
-  "event_id" integer,
   "cart_quantity" integer,
   FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
-  FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id")
 );
 
 CREATE TABLE "Bookings" (
@@ -68,8 +69,7 @@ CREATE TABLE "Bookings" (
   "event_id" integer,
   "booking_date" timestamp default current_timestamp,
   "status" varchar default 'pending' CHECK ("status" IN ('pending', 'confirmed')),
-  FOREIGN KEY ("email") REFERENCES "Customers" ("email"),
-  FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id")
+  FOREIGN KEY ("email") REFERENCES "Customers" ("email")
 );
 
 CREATE TABLE "CustomerType" (

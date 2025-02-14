@@ -27,7 +27,7 @@ def event_hub_page():
         st.markdown("#### Create an Event")
         st.write("Have an event idea? Create and promote your own event here.")
         if st.button("Create Event", key="create_event"):
-            switch_page("Create_Event")  # Redirect to Create_Event page
+            switch_page("creating_event")  # Redirect to Create_Event page
 
 # Call the function to display the Event Hub page
 event_hub_page()

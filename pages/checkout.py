@@ -55,10 +55,10 @@ def display_checkout_page():
         st.title("Checkout")
 
     # "Go to Cart" button in the second column
-    with col2:
-        st.write("")  # Just to align with top right
-        if st.button("Go to Cart"):
-            switch_page("Cart")
+    # with col2:
+    #     st.write("")  # Just to align with top right
+    #     if st.button("Go to Cart"):
+    #         switch_page("Cart")
 
     # Check if user is logged in by checking if email is present in session state
     if "logged_in" not in st.session_state or not st.session_state.logged_in:

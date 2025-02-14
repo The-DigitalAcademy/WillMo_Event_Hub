@@ -77,14 +77,17 @@ def display_cart():
                         st.session_state.cart[i]["quantity"] = new_quantity
                         st.session_state.cart[i]["total_price"] = new_quantity * price
 
-                        # Update quantity in the database
-                        cursor.execute(
-                            'UPDATE "Cart" SET user_quantity = %s WHERE email = %s AND event_id = %s',
-                            (new_quantity, st.session_state.get("user_email", ""), event_id)
-                        )
-                        conn.commit()  # Commit changes to the database
-
-                        st.success(f"Updated quantity for {event_title} to {new_quantity}.")
+                        # Debug: Print query being executed
+                        st.write(f"Updating quantity for event_id {event_id} to {new_quantity}")
+                        try:
+                            cursor.execute(
+                                'UPDATE "Cart" SET cart_quantity = %s WHERE email = %s AND event_id = %s',
+                                (new_quantity, st.session_state.get("user_email", ""), event_id)
+                            )
+                            conn.commit()  # Commit changes to the database
+                            st.success(f"Updated quantity for {event_title} to {new_quantity}.")
+                        except Exception as e:
+                            st.error(f"Error updating quantity in database: {e}")
 
                     # Show prices
                     total_price = new_quantity * price
@@ -96,13 +99,17 @@ def display_cart():
                         # Remove item from cart
                         st.session_state.cart.pop(i)
 
-                        # Remove item from the database
-                        cursor.execute(
-                            'DELETE FROM "Cart" WHERE email = %s AND event_id = %s',
-                            (st.session_state.get("user_email", ""), event_id)
-                        )
-                        conn.commit()  # Commit changes to the database
-                        st.success(f"Removed {event_title} from the cart.")
+                        # Debug: Print query being executed
+                        st.write(f"Removing item with event_id {event_id}")
+                        try:
+                            cursor.execute(
+                                'DELETE FROM "Cart" WHERE email = %s AND event_id = %s',
+                                (st.session_state.get("user_email", ""), event_id)
+                            )
+                            conn.commit()  # Commit changes to the database
+                            st.success(f"Removed {event_title} from the cart.")
+                        except Exception as e:
+                            st.error(f"Error deleting item from database: {e}")
 
                         # Refresh the page immediately
                         st.experimental_rerun()
@@ -147,14 +154,18 @@ def add_to_cart(event_id, event_title, quantity, price):
             item["quantity"] += quantity
             item["total_price"] = item["quantity"] * price
 
-            # Update the quantity in the database
-            cursor.execute(
-                'UPDATE "Cart" SET user_quantity = %s WHERE email = %s AND event_id = %s',
-                (item["quantity"], st.session_state.get("user_email", ""), event_id)
-            )
-            conn.commit()  # Commit changes to the database
+            # Debug: Print query being executed
+            st.write(f"Updating quantity for event_id {event_id} to {item['quantity']}")
+            try:
+                cursor.execute(
+                    'UPDATE "Cart" SET cart_quantity = %s WHERE email = %s AND event_id = %s',
+                    (item["quantity"], st.session_state.get("user_email", ""), event_id)
+                )
+                conn.commit()  # Commit changes to the database
+                st.success(f"Updated quantity for {event_title}.")
+            except Exception as e:
+                st.error(f"Error updating quantity in database: {e}")
 
-            st.success(f"Updated quantity for {event_title}.")
             cursor.close()
             conn.close()
             return
@@ -167,14 +178,17 @@ def add_to_cart(event_id, event_title, quantity, price):
         "total_price": price * quantity
     })
 
-    # Insert new entry into the database
-    cursor.execute(
-        'INSERT INTO "Cart" (email, event_id, user_quantity) VALUES (%s, %s, %s)',
-        (st.session_state.get("user_email", ""), event_id, quantity)
-    )
-    conn.commit()  # Commit changes to the database
+    # Insert new entry into the database (cart_quantity is the correct field)
+    try:
+        cursor.execute(
+            'INSERT INTO "Cart" (email, event_id, cart_quantity) VALUES (%s, %s, %s)',
+            (st.session_state.get("user_email", ""), event_id, quantity)
+        )
+        conn.commit()  # Commit changes to the database
+        st.success(f"Added {event_title} to the cart.")
+    except Exception as e:
+        st.error(f"Error adding to cart in database: {e}")
 
-    st.success(f"Added {event_title} to the cart.")
     cursor.close()
     conn.close()
 

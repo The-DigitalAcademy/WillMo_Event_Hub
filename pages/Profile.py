@@ -44,6 +44,9 @@ def get_user_data_and_events(email):
             """, (email,))
             booked_events = cursor.fetchall()
 
+            # Debugging: Log the booked events
+            st.write(f"Booked Events (for email: {email}): {booked_events}")
+
             return user_data, booked_events
         else:
             return None, None

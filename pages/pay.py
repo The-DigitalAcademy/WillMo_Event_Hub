@@ -53,32 +53,45 @@ def process_payment():
             'INSERT INTO "Bookings" (email, booking_date, status) VALUES (%s, current_timestamp, %s) RETURNING booking_id',
             (email, 'confirmed')
         )
-        booking_id = cursor.fetchone()[0]
-        conn.commit()
+        # Fetch the booking_id from the returned result
+        booking_id_result = cursor.fetchone()
+        if booking_id_result:
+            booking_id = booking_id_result[0]
+        else:
+            st.error("Failed to generate booking ID.")
+            conn.rollback()
+            return
 
-        st.success(f"Booking confirmed! Booking ID: {booking_id}")
+        conn.commit()  # Commit the insertion of the booking
 
         # Step 2: Iterate over the DataFrame and update the database
         for index, row in cart_data.iterrows():
             event_id = row["event_id"]
             quantity = row["quantity"]
 
-            # Update the BookingEventMap table
+            # Insert into BookingEventMap table
             cursor.execute(
                 'INSERT INTO "BookingEventMap" (booking_id, event_id) VALUES (%s, %s)',
                 (booking_id, event_id)
             )
 
+            # Check if there are enough tickets available
+            cursor.execute(
+                'SELECT quantity FROM "Events" WHERE event_id = %s',
+                (event_id,)
+            )
+            available_quantity = cursor.fetchone()[0]
+
+            if available_quantity < quantity:
+                st.error(f"Not enough tickets available for event ID {event_id}. Available: {available_quantity}.")
+                conn.rollback()  # Rollback if not enough tickets are available
+                return
+
             # Update the Events table to reduce ticket quantity
             cursor.execute(
-                'UPDATE "Events" SET quantity = quantity - %s WHERE event_id = %s AND quantity 9 RETURNING quantity',
-                (quantity, event_id, quantity)
+                'UPDATE "Events" SET quantity = quantity - %s WHERE event_id = %s',
+                (quantity, event_id)
             )
-            updated_quantity = cursor.fetchone()
-            if updated_quantity is None:
-                st.error(f"Not enough tickets available for event ID {event_id}. Rolling back.")
-                conn.rollback()
-                return
 
         conn.commit()
 
