@@ -2,12 +2,12 @@ import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 from establish_connection import connect_to_database
 
-# Function to fetch event details (including price)
+# Function to fetch event details (including price and available tickets)
 def fetch_event_details(event_id):
     connection = connect_to_database()
     if connection:
         query = """
-            SELECT e.event_id, e.event_title, e.price
+            SELECT e.event_id, e.event_title, e.price, e.quantity
             FROM "Events" e
             WHERE e.event_id = %s
         """
@@ -19,7 +19,8 @@ def fetch_event_details(event_id):
                 return {
                     "event_id": data[0], 
                     "event_title": data[1], 
-                    "price": data[2]
+                    "price": data[2],
+                    "available_quantity": data[3]
                 }
     return None
 
@@ -90,43 +91,57 @@ def display_checkout_page():
     if event_details:
         st.write(f"**Event Title:** {event_details['event_title']}")
         event_price = event_details["price"]
+        available_quantity = event_details["available_quantity"]
+
+        if available_quantity > 0:
+            # Quantity and price update
+            quantity = st.number_input(
+                "Select Quantity",
+                min_value=1,
+                max_value=available_quantity,
+                value=1
+            )
+            price = event_price * quantity
+            st.write(f"**Total Price:** R{price}")
+
+            # Layout buttons neatly using columns for the rest
+            col1, col2 = st.columns([1, 2])
+
+            # Add to Cart Button in first column
+            with col1:
+                if st.button("Add to Cart"):
+                    # Check if the event already exists in the cart
+                    if "cart" not in st.session_state:
+                        st.session_state.cart = []
+
+                    event_in_cart = False
+                    for item in st.session_state.cart:
+                        if item["event_id"] == event_id:
+                            if item["quantity"] + quantity > available_quantity:
+                                st.error(f"Cannot add {quantity} tickets. Only {available_quantity - item['quantity']} remaining.")
+                            else:
+                                item["quantity"] += quantity
+                                item["total_price"] = item["quantity"] * event_price
+                                event_in_cart = True
+                                st.success(f"Updated {event_details['event_title']} quantity to {item['quantity']}.")
+                            break
+
+                    if not event_in_cart:
+                        cart_item = {
+                            "event_id": event_id,
+                            "event_title": event_details["event_title"],
+                            "quantity": quantity,
+                            "total_price": price
+                        }
+                        st.session_state.cart.append(cart_item)
+                        st.success(f"Added {event_details['event_title']} to the cart with quantity {quantity}.")
+        else:
+            st.error("This event is sold out.")
+            return
+
     else:
         st.error("Event details not found.")
         return
-
-    # Quantity and price update
-    quantity = st.number_input("Select Quantity", min_value=1, max_value=10, value=1)
-    price = event_price * quantity
-    st.write(f"**Total Price:** R{price}")
-
-    # Layout buttons neatly using columns for the rest
-    col1, col2 = st.columns([1, 2])
-
-    # Add to Cart Button in first column
-    with col1:
-        if st.button("Add to Cart"):
-            # Check if the event already exists in the cart
-            if "cart" not in st.session_state:
-                st.session_state.cart = []
-
-            event_in_cart = False
-            for item in st.session_state.cart:
-                if item["event_id"] == event_id:
-                    item["quantity"] += quantity
-                    item["total_price"] = item["quantity"] * event_price
-                    event_in_cart = True
-                    st.success(f"Updated {event_details['event_title']} quantity to {item['quantity']}.")
-                    break
-
-            if not event_in_cart:
-                cart_item = {
-                    "event_id": event_id,
-                    "event_title": event_details["event_title"],
-                    "quantity": quantity,
-                    "total_price": price
-                }
-                st.session_state.cart.append(cart_item)
-                st.success(f"Added {event_details['event_title']} to the cart with quantity {quantity}.")
 
     # Back to Event Details Button in second column
     with col2:

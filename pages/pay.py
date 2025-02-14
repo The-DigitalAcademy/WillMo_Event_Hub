@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
+import pandas as pd
 
 # Function to connect to the database
 def connect_to_database():
@@ -19,7 +20,6 @@ def connect_to_database():
 
 # Function to process the payment and update the booking
 def process_payment():
-    # Ensure user is logged in
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         st.warning("You must be signed in to proceed.")
         return
@@ -29,6 +29,17 @@ def process_payment():
         st.error("No email found. Please log in.")
         return
 
+    if "cart" not in st.session_state or not st.session_state.cart:
+        st.warning("Your cart is empty. Add items before proceeding.")
+        return
+
+    # Convert cart data to a DataFrame
+    cart_data = pd.DataFrame(st.session_state.cart)
+
+    # Display the cart as a table
+    st.subheader("Your Cart")
+    st.dataframe(cart_data)
+
     conn = connect_to_database()
     if not conn:
         st.error("Unable to connect to the database.")
@@ -37,46 +48,53 @@ def process_payment():
     cursor = conn.cursor()
 
     try:
-        # Insert a new booking record into the Bookings table
+        # Step 1: Insert a new booking record into the Bookings table
         cursor.execute(
             'INSERT INTO "Bookings" (email, booking_date, status) VALUES (%s, current_timestamp, %s) RETURNING booking_id',
             (email, 'confirmed')
         )
-        booking_id = cursor.fetchone()[0]  # Retrieve the booking_id after insertion
+        booking_id = cursor.fetchone()[0]
         conn.commit()
 
-        st.success("Payment successful! Your booking has been confirmed.")
+        st.success(f"Booking confirmed! Booking ID: {booking_id}")
 
-        # Debug: Print the cart to check the event_ids
-        st.write("Cart:", st.session_state.cart)
+        # Step 2: Iterate over the DataFrame and update the database
+        for index, row in cart_data.iterrows():
+            event_id = row["event_id"]
+            quantity = row["quantity"]
 
-        # Insert records into the BookingEventMap table for each event in the cart
-        if "cart" in st.session_state and st.session_state.cart:
-            for item in st.session_state.cart:
-                event_id = item.get("event_id")  # Get the event_id from the cart
-                if event_id is None:
-                    st.error("Event ID is missing from the cart item.")
-                    return
+            # Update the BookingEventMap table
+            cursor.execute(
+                'INSERT INTO "BookingEventMap" (booking_id, event_id) VALUES (%s, %s)',
+                (booking_id, event_id)
+            )
 
-                # Debug: Print each event_id before inserting
-                st.write(f"Inserting event_id: {event_id} for booking_id: {booking_id}")
+            # Update the Events table to reduce ticket quantity
+            cursor.execute(
+                'UPDATE "Events" SET quantity = quantity - %s WHERE event_id = %s AND quantity 9 RETURNING quantity',
+                (quantity, event_id, quantity)
+            )
+            updated_quantity = cursor.fetchone()
+            if updated_quantity is None:
+                st.error(f"Not enough tickets available for event ID {event_id}. Rolling back.")
+                conn.rollback()
+                return
 
-                cursor.execute(
-                    'INSERT INTO "BookingEventMap" (booking_id, event_id) VALUES (%s, %s)',
-                    (booking_id, event_id)
-                )
-            conn.commit()
+        conn.commit()
 
-        # Optionally, clear the cart after booking
+        # Step 3: Clear the cart
         st.session_state.cart = []
 
-        # Optionally, redirect to another page, e.g., confirmation page
+        # Confirmation message
+        st.success("Payment processed successfully. Your cart has been cleared.")
+
+        # Redirect to another page if needed
         if st.button("Go to my Profile"):
             switch_page("Profile")
 
     except Exception as e:
-        conn.rollback()  # Rollback if there's an error
-        st.error(f"An error occurred while processing the payment: {e}")
+        conn.rollback()
+        st.error(f"An error occurred: {e}")
 
     finally:
         cursor.close()
@@ -86,11 +104,12 @@ def process_payment():
 def display_payment_page():
     st.title("Payment")
 
-    # Payment Success Message
-    st.write("You are about to complete your payment. Click below to confirm your booking.")
-
-    if st.button("Pay Now"):
-        process_payment()
+    if "cart" in st.session_state and st.session_state.cart:
+        st.write("Review your cart and confirm payment.")
+        if st.button("Pay Now"):
+            process_payment()
+    else:
+        st.warning("Your cart is empty.")
 
 # Run the display_payment_page function
 display_payment_page()
