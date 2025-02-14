@@ -17,8 +17,15 @@ def connect_to_database():
         st.error(f"Error connecting to the database: {e}")
         return None
 
+# Function to check if the user is logged in
+def check_logged_in():
+    if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
+        switch_page("Signup")  # Redirect to login page if not logged in
+
 # Function to display cart
 def display_cart():
+    check_logged_in()  # Ensure the user is logged in
+
     st.title("Your Cart")
 
     # Connect to the database

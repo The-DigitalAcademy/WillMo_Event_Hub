@@ -2,14 +2,20 @@ import streamlit as st
 import psycopg2 as ps
 from streamlit_extras.switch_page_button import switch_page
 
-# Connect to the PostgreSQL database server
-connection = ps.connect(
-    host='localhost',
-    port='5432',
-    database='willmo',
-    user='postgres',
-    password=''
-)
+# Function to connect to the PostgreSQL database server
+def connect_to_database():
+    try:
+        connection = ps.connect(
+            host='localhost',
+            port='5432',
+            database='willmo',
+            user='postgres',
+            password=''  # Avoid hardcoding credentials in the script
+        )
+        return connection
+    except Exception as e:
+        st.error(f"Error connecting to the database: {e}")
+        return None
 
 # Function to check if the user is logged in
 def check_logged_in():
@@ -18,6 +24,10 @@ def check_logged_in():
 
 # Function to fetch user data and booked events
 def get_user_data_and_events(email):
+    connection = connect_to_database()
+    if not connection:
+        return None, None
+
     with connection.cursor() as cursor:
         # Fetch user information
         cursor.execute('SELECT * FROM "Customers" WHERE email = %s', (email,))
@@ -40,6 +50,11 @@ def get_user_data_and_events(email):
 
 # Function to update user details
 def update_user_details(email, contact, name):
+    connection = connect_to_database()
+    if not connection:
+        st.error("Database connection failed.")
+        return
+
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE "Customers"
@@ -53,6 +68,7 @@ def logout():
     # Clear session state and redirect to login page
     del st.session_state["logged_in"]
     del st.session_state["email"]
+    st.success("You have been logged out successfully!")
     switch_page("Signup")
 
 # Display profile page
@@ -75,9 +91,12 @@ def display_profile_page():
         st.write("### Your Booked Events")
         if booked_events:
             for event in booked_events:
-                st.write(f"- {event[0]} on {event[1]} at {event[2]}")
+                st.write(f"### {event[0]}")
+                st.write(f"Date: {event[1]} at {event[2]}")
+                st.write(f"Location: {event[4]}, {event[5]}, {event[6]}")
+                st.write(f"Description: {event[3]}")
         else:
-            st.write("No events booked.")
+            st.write("No events booked. Browse events and book your tickets!")
 
         # Form to update name and contact
         st.write("### Update Your Information")
@@ -98,7 +117,7 @@ def display_profile_page():
             logout()
 
     else:
-        st.error("User data not found.")
+        st.error("User data not found. Please try logging in again.")
 
 # Call the function to display profile page
 display_profile_page()
