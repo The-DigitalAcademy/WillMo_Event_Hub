@@ -16,6 +16,15 @@ st.markdown("""
             text-align: center;
             border-radius: 15px;
             font-size: 22px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .hero-container h2 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        .hero-container p {
+            font-size: 1.1rem;
+            margin-top: 10px;
         }
     </style>
     <div class="hero-container">
@@ -42,8 +51,7 @@ categories = ["🎶 Concerts", "📈 Business", "⚽ Sports", "🎨 Arts & Cultu
 for i, category in enumerate(categories):
     cols[i].button(category)
 
-# 🌟 Did you know? Section
-
+# 🌟 Featured Events Section
 st.subheader("🔥 Featured Events")
 
 def get_upcoming_events():
@@ -100,19 +108,12 @@ if events:
                 st.write(f"💰 **Price:** R{event['price']}")
                 st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
 
-# 🌟 Testimonials & Reviews Section
-st.subheader("💬 What Our Customers Say")
-testimonials = [
-    ("John D.", "🌟🌟🌟🌟🌟 Best event platform ever! Super easy to book."),
-    ("Sarah M.", "🌟🌟🌟🌟 I found an amazing concert last weekend, thanks to WillMo Events!"),
-    ("David R.", "🌟🌟🌟🌟🌟 Seamless experience! I love how smooth the booking process is."),
-]
-for name, review in testimonials:
-    st.markdown(f"**{name}**: _{review}_")
+
+
 st.markdown("""
     <div style="background-color: #f9f9f9; padding: 20px; border-radius: 10px; text-align: center;">
         <h3>💡 Did you know?</h3>
-        <p>You can also <b>create your own event</b> on WillMo Events Hub! 🚀</p>
+        <p>WillMo is a South African website that allows registered users to <b>create and book events</b> with ease! 🎉</p>
         <p>Click the button below to start creating your event and bring your idea to life!</p>
         <a href="https://www.willmoeventhub.com/create-event" target="_blank">
             <button style="background-color: #FF4B4B; color: white; padding: 10px 20px; border: none; font-size: 16px; border-radius: 5px;">
@@ -122,9 +123,9 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 🔗 Quick Actions
-st.subheader("🚀 Quick Actions")
+
 btn_cols = st.columns(3)
 btn_cols[0].button("📅 View All Events")
 btn_cols[1].button("🎟️ My Tickets")
 btn_cols[2].button("📞 Contact Support")
+
