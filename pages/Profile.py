@@ -10,7 +10,7 @@ def connect_to_database():
             port='5432',
             database='willmo',
             user='postgres',
-            password=''  # Avoid hardcoding credentials in the script
+            password='Will'  # Avoid hardcoding credentials in the script
         )
         return connection
     except Exception as e:
@@ -22,64 +22,60 @@ def check_logged_in():
     if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
         switch_page("Signup")  # Redirect to login page if not logged in
 
-# Function to fetch user data and booked events
+# Function to fetch user data and their events
 def get_user_data_and_events(email):
     connection = connect_to_database()
     if not connection:
-        return None, None
+        return None, None, None
 
     with connection.cursor() as cursor:
         # Fetch user information
         cursor.execute('SELECT * FROM "Customers" WHERE email = %s', (email,))
         user_data = cursor.fetchone()
 
-        if user_data:
-            # Fetch booked events for the user
-            cursor.execute("""
-                SELECT e.event_title, e.start_date, e.start_time, e.description, l.venue_title, l.city, l.province
-                FROM "Events" e
-                JOIN "Bookings" b ON e.event_id = b.event_id
-                JOIN "Location" l ON e.location_id = l.location_id
-                WHERE b.email = %s
-            """, (email,))
-            booked_events = cursor.fetchall()
+        # Fetch user's created events (if they are an organizer)
+        cursor.execute('''
+            SELECT e.event_id, e.event_title, e.start_date, e.start_time, e.description, 
+                   l.venue_title, l.city, l.province, e.price, e.quantity
+            FROM "Events" e
+            JOIN "Organizer" o ON e.organizer_id = o.organizer_id
+            JOIN "Location" l ON e.location_id = l.location_id
+            WHERE o.email = %s
+        ''', (email,))
+        created_events = cursor.fetchall()
 
-            # Debugging: Log the booked events
-            st.write(f"Booked Events (for email: {email}): {booked_events}")
+        # Fetch ticket sales and profit
+        event_sales = {}
+        for event in created_events:
+            event_id = event[0]
+            cursor.execute('''
+                SELECT COUNT(*), SUM(e.price) FROM "Bookings" b
+                JOIN "Events" e ON b.event_id = e.event_id
+                WHERE b.event_id = %s AND b.status = 'confirmed'
+            ''', (event_id,))
+            sales_data = cursor.fetchone()
+            event_sales[event_id] = sales_data if sales_data else (0, 0.0)
 
-            return user_data, booked_events
-        else:
-            return None, None
+        return user_data, created_events, event_sales
 
-# Function to update user details
-def update_user_details(email, contact, name):
+# Function to delete an event
+def delete_event(event_id):
     connection = connect_to_database()
     if not connection:
         st.error("Database connection failed.")
         return
 
     with connection.cursor() as cursor:
-        cursor.execute("""
-            UPDATE "Customers"
-            SET contact = %s, name = %s
-            WHERE email = %s
-        """, (contact, name, email))
+        cursor.execute('DELETE FROM "Events" WHERE event_id = %s', (event_id,))
         connection.commit()
-
-# Function to log out the user
-def logout():
-    # Clear session state and redirect to login page
-    del st.session_state["logged_in"]
-    del st.session_state["email"]
-    st.success("You have been logged out successfully!")
-    switch_page("Signup")
+        st.success("Event deleted successfully!")
 
 # Display profile page
 def display_profile_page():
     check_logged_in()
-
+    
     user_email = st.session_state.get("email", "")
-    user_data, booked_events = get_user_data_and_events(user_email)
+    user_data, created_events, event_sales = get_user_data_and_events(user_email)
 
     if user_data:
         contact, name, surname, email = user_data[0], user_data[1], user_data[2], user_data[3]
@@ -90,35 +86,32 @@ def display_profile_page():
         st.write(f"**Contact**: {contact}")
         st.write(f"**Email**: {email}")
 
-        # Display booked events
-        st.write("### Your Booked Events")
-        if booked_events:
-            for event in booked_events:
-                st.write(f"### {event[0]}")
-                st.write(f"Date: {event[1]} at {event[2]}")
-                st.write(f"Location: {event[4]}, {event[5]}, {event[6]}")
-                st.write(f"Description: {event[3]}")
+        # Display created events
+        st.write("### Your Created Events")
+        if created_events:
+            for event in created_events:
+                event_id, title, date, time, desc, venue, city, province, price, tickets = event
+                sales_count, revenue = event_sales[event_id]
+                
+                st.write(f"#### {title}")
+                st.write(f"Date: {date} at {time}")
+                st.write(f"Location: {venue}, {city}, {province}")
+                st.write(f"Description: {desc}")
+                st.write(f"Ticket Price: ${price}")
+                st.write(f"Tickets Sold: {sales_count}/{tickets}")
+                st.write(f"Total Revenue: ${revenue}")
+                
+                # Edit and Delete Buttons
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button(f"Edit {title}"):
+                        switch_page("Edit_Event")
+                with col2:
+                    if st.button(f"Delete {title}"):
+                        delete_event(event_id)
+                        st.experimental_rerun()
         else:
-            st.write("No events booked. Browse events and book your tickets!")
-
-        # Form to update name and contact
-        st.write("### Update Your Information")
-        new_name = st.text_input("Name", value=name)
-        new_contact = st.text_input("Contact", value=contact)
-
-        update_button = st.button("Update Information")
-
-        if update_button:
-            if new_name != name or new_contact != contact:
-                update_user_details(email, new_contact, new_name)
-                st.success("Your details have been updated successfully!")
-            else:
-                st.warning("No changes were made.")
-        
-        # Logout button
-        if st.button("Logout"):
-            logout()
-
+            st.write("No events created. Start organising now!")
     else:
         st.error("User data not found. Please try logging in again.")
 
