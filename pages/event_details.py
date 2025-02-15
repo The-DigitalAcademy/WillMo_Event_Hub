@@ -67,16 +67,16 @@ def display_event_details_page():
     # Display event details
     st.subheader("Event Details")
 
-    # Event image (if available)
+    # Event image (if available) with resized image width
     image_path = event['image']
     if image_path and not image_path.startswith("http"):
         local_image_path = f".{image_path}"
         if os.path.exists(local_image_path):
-            st.image(local_image_path, caption=event['event_title'], use_container_width=True)
+            st.image(local_image_path, caption=event['event_title'], use_container_width=True, width=600)  # Use the new parameter
         else:
             st.warning(f"Image not found: {local_image_path}")
     elif image_path and image_path.startswith("http"):
-        st.image(image_path, caption=event['event_title'], use_container_width=True)
+        st.image(image_path, caption=event['event_title'], use_container_width=True, width=600)  # Use the new parameter
 
     # Display event details in a structured format
     st.markdown(f'<div class="details-title">{event["event_title"]}</div>', unsafe_allow_html=True)
