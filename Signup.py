@@ -14,7 +14,7 @@ connection = ps.connect(
     port='5432',
     database='willmo',
     user='postgres',
-    password=''
+    password='Will'
 )
 
 # Checking if email or contact exists in the database
