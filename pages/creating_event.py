@@ -90,7 +90,7 @@ def create_event(event_title, description, start_date, start_time, capacity, qua
             """, (event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, location_id, category_id, organizer_id))
              
             if st.button("Track Event"):
-                switch_page("Profile")
+                switch_page("tracking_py")
             conn.commit()
             st.success("Event created successfully!")
 
