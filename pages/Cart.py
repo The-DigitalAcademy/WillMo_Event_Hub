@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
+import os
 
 # Function to connect to the database
 def connect_to_database():
@@ -57,10 +58,15 @@ def display_cart():
                 else:
                     event_title, event_image, price = "Unknown Event", None, 0
 
+                # Handle image path
+                event_image_path = os.path.join('event_images', event_image) if event_image else None
+
                 # Display event details
                 with st.expander(f"Event: {event_title}", expanded=False):
-                    if event_image:
-                        st.image(event_image, width=150)  # Smaller event image
+                    if event_image and os.path.exists(event_image_path):
+                        st.image(event_image_path, width=150)  # Smaller event image
+                    else:
+                        st.error(f"Image not found: {event_image_path}")
 
                     # Display current quantity and allow updates
                     current_quantity = item.get("quantity", 1)

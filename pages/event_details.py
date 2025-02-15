@@ -1,6 +1,7 @@
 import streamlit as st
 from establish_connection import connect_to_database
 import os
+from streamlit_extras.switch_page_button import switch_page
 
 def get_event_details(event_id):
     """Fetch details for a specific event based on event_id."""
@@ -91,6 +92,10 @@ def display_event_details_page():
     # If the event has a URL, provide a link
     if event.get("event_url"):
         st.markdown(f'[Visit Event Page]({event["event_url"]})', unsafe_allow_html=True)
+    
+    # "Book Now" button to switch to car page
+    if st.button("Book Now"):
+        switch_page("checkout")
 
 # Run the function to display the event details page
 display_event_details_page()
