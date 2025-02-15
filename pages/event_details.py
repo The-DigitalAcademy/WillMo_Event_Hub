@@ -49,7 +49,7 @@ def display_event_details():
         event_details = fetch_event_details(event_id)
         if event_details:
             # Display Event Image
-            st.image(event_details['image'], use_column_width=True, caption=None)
+            st.image(event_details['image'], use_container_width=True, caption=None)
 
             # Display Event Title
             st.header(event_details['event_title'])

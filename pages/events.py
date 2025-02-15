@@ -123,7 +123,7 @@ def display_booking_page():
             with col:
                 with st.container():
                     st.markdown('<div class="card-container">', unsafe_allow_html=True)
-                    st.image(event["image"], use_column_width=True, caption=None)
+                    st.image(event["image"], use_container_width=True, caption=None)
                     st.markdown(f'<div class="card-title">{event["event_title"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Date: {event["start_date"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Time: {event["start_time"]}</div>', unsafe_allow_html=True)
