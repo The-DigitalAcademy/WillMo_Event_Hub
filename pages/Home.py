@@ -1,17 +1,17 @@
-import streamlit as st
+import streamlit as st 
 import pandas as pd
 import os
 from establish_connection import connect_to_database
 
 st.set_page_config(page_title="WillMo Events Hub", layout="wide")
-st.title("🎉 Welcome to WillMo Events Hub! 🎉")
+st.title("Welcome to WillMo Events Hub! ")
 
 # 🌟 Hero Section: Engaging Introduction
 st.markdown("""
     <style>
         .hero-container {
-            background-color: #FF4B4B;
-            color: white;
+            background-color: #e0e0e0;  /* Light Grey */
+            color: black;
             padding: 40px;
             text-align: center;
             border-radius: 15px;
@@ -33,7 +33,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-st.subheader("🌍 Explore Exciting Events Around You!")
+st.subheader("Explore Exciting Events Around You!")
 
 # 🔎 Search Bar & Location Filter
 event_title_search = st.text_input("Search for an event", "").strip()
@@ -44,15 +44,15 @@ south_african_cities = [
 ]
 location_search = st.selectbox("📍 Filter by location", south_african_cities)
 
-# 🎭 Event Categories
-st.subheader("🎟️ Browse by Category")
+# Event Categories
+st.subheader(" Browse by Category")
 cols = st.columns(5)
-categories = ["🎶 Concerts", "📈 Business", "⚽ Sports", "🎨 Arts & Culture", "🎤 Conferences"]
+categories = [" Concerts", "Business", " Sports", " Arts & Culture", " Conferences"]
 for i, category in enumerate(categories):
     cols[i].button(category)
 
 # 🌟 Featured Events Section
-st.subheader("🔥 Featured Events")
+st.subheader(" Featured Events")
 
 def get_upcoming_events():
     """Fetch upcoming events from the database."""
@@ -68,7 +68,7 @@ def get_upcoming_events():
             FROM "Events" as e
             LEFT JOIN "Location" as l ON l.location_id = e.location_id
             ORDER BY e.start_date ASC
-            LIMIT 6;  -- Show only 6 featured events
+            LIMIT 6;
         ''')
         events = cursor.fetchall()
         col_names = [desc[0] for desc in cursor.description]
@@ -108,24 +108,48 @@ if events:
                 st.write(f"💰 **Price:** R{event['price']}")
                 st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
 
-
-
+# 💡 Did You Know Section
 st.markdown("""
-    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 10px; text-align: center;">
+    <style>
+        .info-box {
+            background-color: #f5f5f5;  /* Light Grey */
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .info-box h3 {
+            color: #333;
+        }
+        .info-box p {
+            color: #555;
+            font-size: 16px;
+        }
+        .custom-button {
+            background-color: #333; /* Dark Grey */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .custom-button:hover {
+            background-color: #555;
+        }
+    </style>
+    <div class="info-box">
         <h3>💡 Did you know?</h3>
         <p>WillMo is a South African website that allows registered users to <b>create and book events</b> with ease! 🎉</p>
         <p>Click the button below to start creating your event and bring your idea to life!</p>
-        <a href="https://www.willmoeventhub.com/create-event" target="_blank">
-            <button style="background-color: #FF4B4B; color: white; padding: 10px 20px; border: none; font-size: 16px; border-radius: 5px;">
-                Create Your Event
-            </button>
-        </a>
+        <a href="https://www.willmoeventhub.com/create-event" target="_blank" class="custom-button">Create Your Event</a>
     </div>
 """, unsafe_allow_html=True)
 
-
+# 🎟️ Additional Buttons
 btn_cols = st.columns(3)
-btn_cols[0].button("📅 View All Events")
-btn_cols[1].button("🎟️ My Tickets")
-btn_cols[2].button("📞 Contact Support")
-
+btn_cols[0].button("📅 View All Events", key="view_all_events")
+btn_cols[1].button("🎟️ My Tickets", key="my_tickets")
+btn_cols[2].button("📞 Contact Support", key="contact_support")

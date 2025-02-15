@@ -8,6 +8,7 @@ from streamlit_extras.switch_page_button import switch_page
 st.set_page_config(page_title="events", page_icon=":guardsman:", layout="wide")
 
 
+
 # Connect to the PostgreSQL database server
 connection = ps.connect(
     host='localhost',
