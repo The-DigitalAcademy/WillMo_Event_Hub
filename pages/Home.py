@@ -1,41 +1,53 @@
 import streamlit as st
 import pandas as pd
+import os
 from establish_connection import connect_to_database
 
 st.set_page_config(page_title="WillMo Events Hub", layout="wide")
-st.title("WillMo Events Hub")
+st.title("🎉 Welcome to WillMo Events Hub! 🎉")
 
-st.subheader("Search for an Event")
+# 🌟 Hero Section: Engaging Introduction
+st.markdown("""
+    <style>
+        .hero-container {
+            background-color: #FF4B4B;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 15px;
+            font-size: 22px;
+        }
+    </style>
+    <div class="hero-container">
+        <h2>Discover, Book, and Experience the Best Events Near You! 🚀</h2>
+        <p>From concerts to business conferences, find and book events seamlessly.</p>
+    </div>
+""", unsafe_allow_html=True)
 
-# List of major South African cities for location filter
+st.subheader("🌍 Explore Exciting Events Around You!")
+
+# 🔎 Search Bar & Location Filter
+event_title_search = st.text_input("Search for an event", "").strip()
 south_african_cities = [
-    "All Locations",
-    "Cape Town",
-    "Johannesburg",
-    "Durban",
-    "Pretoria",
-    "Port Elizabeth",
-    "Bloemfontein",
-    "East London",
-    "Polokwane",
-    "Nelspruit",
-    "Kimberley",
-    "Pietermaritzburg",
-    "Vanderbijlpark",
-    "George",
-    "Rustenburg",
-    "Mbombela",
-    "Tshwane",
+    "All Locations", "Cape Town", "Johannesburg", "Durban", "Pretoria", "Port Elizabeth",
+    "Bloemfontein", "East London", "Polokwane", "Nelspruit", "Kimberley",
+    "Pietermaritzburg", "Vanderbijlpark", "George", "Rustenburg", "Mbombela", "Tshwane"
 ]
+location_search = st.selectbox("📍 Filter by location", south_african_cities)
 
-event_title_search = st.text_input("Search by event title", "").strip()
+# 🎭 Event Categories
+st.subheader("🎟️ Browse by Category")
+cols = st.columns(5)
+categories = ["🎶 Concerts", "📈 Business", "⚽ Sports", "🎨 Arts & Culture", "🎤 Conferences"]
+for i, category in enumerate(categories):
+    cols[i].button(category)
 
-location_search = st.selectbox("Filter by location", south_african_cities)
+# 🌟 Did you know? Section
 
-st.subheader("Upcoming Events")
-
+st.subheader("🔥 Featured Events")
 
 def get_upcoming_events():
+    """Fetch upcoming events from the database."""
     conn = connect_to_database()
     if conn is None:
         return []
@@ -43,21 +55,16 @@ def get_upcoming_events():
     try:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT  e.image, l.province, l.city, e.description, e.price, e.quantity, e.event_url
-            , e.event_title, l.venue_title, e.start_date, e.start_time
+            SELECT e.image, l.province, l.city, e.description, e.price, e.quantity, e.event_url,
+                   e.event_title, l.venue_title, e.start_date, e.start_time
             FROM "Events" as e
-            LEFT JOIN "Location" as l
-            ON l.location_id = e.location_id;
+            LEFT JOIN "Location" as l ON l.location_id = e.location_id
+            ORDER BY e.start_date ASC
+            LIMIT 6;  -- Show only 6 featured events
         ''')
         events = cursor.fetchall()
-
-        # Get column names
         col_names = [desc[0] for desc in cursor.description]
-
-        # Convert rows to dictionaries
-        event_list = [dict(zip(col_names, row)) for row in events]
-
-        return event_list
+        return [dict(zip(col_names, row)) for row in events]
 
     except Exception as e:
         st.error(f"Error fetching events: {e}")
@@ -67,60 +74,57 @@ def get_upcoming_events():
         cursor.close()
         conn.close()
 
-
 events = get_upcoming_events()
 
-# Filter events based on search inputs
-filtered_events = []
-for event in events:
-    title_match = event_title_search.lower() in event["event_title"].lower() if event_title_search else True
-    
-    # Safeguard for None value in "city" field
-    location_match = location_search == "All Locations" or (event.get("city") and location_search in event["city"])
-
-    if title_match and location_match:
-        filtered_events.append(event)
-st.markdown("""
-        <style>
-        .event-card {
-            border: 1px solid #ccc;
-            padding: 16px;
-            margin: 10px;
-            border-radius: 8px;
-            width: 400px;
-            height: 500px;
-        }
-        .event-card img {
-            max-height: 200px;
-            margin-bottom: 10px;
-        }
-        .event-card h3 {
-            font-size: 1.2em;
-            margin-bottom: 8px;
-        }
-        .event-card p {
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-if filtered_events:
-    cols = st.columns(3)  # Create 3 columns for each row
-    for idx, event in enumerate(filtered_events):
-        col = cols[idx % 3]  # Cycle through columns
+if events:
+    cols = st.columns(3)
+    for idx, event in enumerate(events):
+        col = cols[idx % 3]
         with col:
-            st.markdown(f"""
-                                <div class="event-card">
-                                    <img src="{event['image']}" alt="Event Image">
-                                    <h3>{event['event_title']}</h3>
-                                    <p><strong>Date:</strong> {event['start_date']}</p>
-                                    <p><strong>Time:</strong> {event['start_time']}</p>
-                                    <p><strong>Location:</strong> {event['city']}, {event['province']}</p>
-                                    <p><strong>Price:</strong> R{event['price']}</p>
-                                    <p><strong>Available Tickets:</strong> {event['quantity']} </p>
-                                </div>
-                            </a>
-                        """, unsafe_allow_html=True)
-else:
-    st.write("No events match your search criteria. Please try different keywords or locations.")
+            with st.container():
+                st.subheader(event['event_title'])
+
+                image_path = event['image']
+                if image_path.startswith("http"):
+                    st.image(image_path, caption=event['event_title'], use_container_width=True)
+                else:
+                    local_image_path = f".{image_path}"
+                    if os.path.exists(local_image_path):
+                        st.image(local_image_path, caption=event['event_title'], use_container_width=True)
+                    else:
+                        st.warning(f"Image not found: {local_image_path}")
+
+                st.write(f"📅 **Date:** {event['start_date']}")
+                st.write(f"⏰ **Time:** {event['start_time']}")
+                st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                st.write(f"💰 **Price:** R{event['price']}")
+                st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
+
+# 🌟 Testimonials & Reviews Section
+st.subheader("💬 What Our Customers Say")
+testimonials = [
+    ("John D.", "🌟🌟🌟🌟🌟 Best event platform ever! Super easy to book."),
+    ("Sarah M.", "🌟🌟🌟🌟 I found an amazing concert last weekend, thanks to WillMo Events!"),
+    ("David R.", "🌟🌟🌟🌟🌟 Seamless experience! I love how smooth the booking process is."),
+]
+for name, review in testimonials:
+    st.markdown(f"**{name}**: _{review}_")
+st.markdown("""
+    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 10px; text-align: center;">
+        <h3>💡 Did you know?</h3>
+        <p>You can also <b>create your own event</b> on WillMo Events Hub! 🚀</p>
+        <p>Click the button below to start creating your event and bring your idea to life!</p>
+        <a href="https://www.willmoeventhub.com/create-event" target="_blank">
+            <button style="background-color: #FF4B4B; color: white; padding: 10px 20px; border: none; font-size: 16px; border-radius: 5px;">
+                Create Your Event
+            </button>
+        </a>
+    </div>
+""", unsafe_allow_html=True)
+
+# 🔗 Quick Actions
+st.subheader("🚀 Quick Actions")
+btn_cols = st.columns(3)
+btn_cols[0].button("📅 View All Events")
+btn_cols[1].button("🎟️ My Tickets")
+btn_cols[2].button("📞 Contact Support")

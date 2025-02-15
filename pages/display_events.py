@@ -1,5 +1,9 @@
 import streamlit as st
 
+# Function to check if the user is logged in
+def check_logged_in():
+    if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
+        switch_page("Signup")  # Redirect to login page if not logged in
 
 
 def get_event_image(event_id):
