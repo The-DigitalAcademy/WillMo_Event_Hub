@@ -38,10 +38,10 @@ with col1:
         switch_page("events")  # Redirect to Events page
 with col2:
     if st.button("My Profile", key="setting"):
-        switch_page("pages/profile.py")  # Redirect to Profile page
+        switch_page("profile")  # Redirect to Profile page
 with col3:
     if st.button("Create Event", key="creating"):
-        switch_page("pages/creating_event.py")  # Redirect to Event Creation page
+        switch_page("creating event")  # Redirect to Event Creation page
 
 # About the Platform
 st.markdown(
