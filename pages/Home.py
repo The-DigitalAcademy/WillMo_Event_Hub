@@ -5,7 +5,6 @@ from datetime import date
 from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page
 
-    
 event_categories = ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"]
 
 # Function to fetch the most booked events
@@ -24,21 +23,19 @@ def get_popular_events():
                 e.image,
                 l.city,
                 l.province,
+                l.venue_title,
                 c.category,
                 e.description,
                 e.price,
                 e.quantity,
-                e.event_url,
-                COUNT(bem.booking_id) AS total_bookings
+                e.event_url
             FROM "Events" e
             JOIN "Location" l ON l.location_id = e.location_id
             JOIN "Category" c ON c.category_id = e.category_id
-            JOIN "BookingEventMap" bem ON bem.event_id = e.event_id
-            JOIN "Bookings" b ON b.booking_id = bem.booking_id
-            GROUP BY e.event_id, l.city, l.province, c.category
-            ORDER BY total_bookings DESC
+            WHERE e.start_date >= %s
+            ORDER BY e.price DESC
             LIMIT 5;
-        ''')
+        ''', [date.today()])
 
         events = cursor.fetchall()
         col_names = [desc[0] for desc in cursor.description]
@@ -69,6 +66,7 @@ def get_upcoming_events(location=None, category=None, start_date=None):
                 e.image,
                 l.city,
                 l.province,
+                l.venue_title,
                 c.category,
                 e.description,
                 e.price,
@@ -127,31 +125,84 @@ def display_event_image(image_path, event_title):
 # Streamlit App
 st.set_page_config(layout="wide")
 st.title("Welcome to WillMo Event Hub")
+logo_path = "WillMo_Logo.jpg"
+logo = st.image(logo_path, width=290)
+
+st.markdown(
+    """
+    <style>
+    .welcome-title {
+        font-size: 36px;
+        font-weight: bold;
+        color: #2E3B4E;
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .welcome-message {
+        font-size: 18px;
+        color: #6C7D8C;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 800px;
+    }
+
+    .section-header {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2E3B4E;
+        margin-bottom: 15px;
+    }
+
+    .sidebar-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #2E3B4E;
+    }
+
+    .sidebar-radio {
+        font-size: 16px;
+        color: #6C7D8C;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="welcome-message">
+    Welcome to **WillMo Event Hub**, your one-stop platform to discover, create, and manage events effortlessly. 
+    Whether you're looking for exciting events to attend or want to host your own, we've got you covered. 
+    Explore a wide range of events in various categories, from sports and festivals to online and social gatherings. 
+    Join us today and be part of a vibrant event community.
+    </div>
+    """, unsafe_allow_html=True
+)
 
 # Filters section header
-st.subheader("🔍 Filter Events by Popularity or Date")
+st.subheader("Filter Events")
 
 # Filters at the top of the page (not in the sidebar)
 show_popular = st.checkbox("Show Popular Events", value=False)
 show_upcoming = st.checkbox("Show Upcoming Events", value=False)
 
 # Search Filter for Upcoming Events
-search_query = st.text_input("🔎 Search Events", key="search_query")
+search_query = st.text_input("Search Events", key="search_query")
 
 # Location Filter for Upcoming Events
-location_filter = st.text_input("📍 Location", key="location_filter")
+location_filter = st.text_input("Location", key="location_filter")
 
 # Category Filter for Upcoming Events
-category_filter = st.selectbox(" Category", event_categories, key="category_filter")
+category_filter = st.selectbox("Category", event_categories, key="category_filter")
 
 # Date filter for Upcoming Events
-start_date_filter = st.date_input("📅 Start Date", value=None, key="start_date_filter")
+start_date_filter = st.date_input("Start Date", value=None, key="start_date_filter")
 
 # Search Button
 search_button = st.button("Search Events")
 
 # Left Section - Popular Events or All Events
-st.header(" Events")
+st.header("Events")
 
 # Always fetch all events if no filter is selected or show filtered events
 all_events = get_upcoming_events(location=location_filter, category=category_filter, start_date=start_date_filter)
@@ -166,8 +217,8 @@ if search_button:
                 with st.container():
                     st.subheader(event['event_title'])
                     display_event_image(event['image'], event['event_title'])
-                    st.write(f"📅 **Bookings:** {event['total_bookings']}")
                     st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                    st.write(f"🏟️ **Venue:** {event['venue_title']}")
                     st.write(f"💰 **Price:** R{event['price']}")
                     st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
                     st.markdown(f"[🔗 View Event]({event['event_url']})", unsafe_allow_html=True)
@@ -188,6 +239,7 @@ if search_button:
                     display_event_image(event['image'], event['event_title'])
                     st.write(f"📅 **Date:** {event['start_date']}")
                     st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                    st.write(f"🏟️ **Venue:** {event['venue_title']}")
                     st.write(f"💰 **Price:** R{event['price']}")
                     st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
                     st.markdown(f"[🔗 View Event]({event['event_url']})", unsafe_allow_html=True)
@@ -203,19 +255,18 @@ else:
                 display_event_image(event['image'], event['event_title'])
                 st.write(f"📅 **Date:** {event['start_date']}")
                 st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                st.write(f"🏟️ **Venue:** {event['venue_title']}")
                 st.write(f"💰 **Price:** R{event['price']}")
                 st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
-                st.markdown(f"[ View Event]({event['event_url']})", unsafe_allow_html=True)
+                st.markdown(f"[🔗 View Event]({event['event_url']})", unsafe_allow_html=True)
                 st.divider()
     else:
         st.warning("No events found.")
 
 # Section to Create an Event
+st.sidebar.header("Host or Book an Event Now!")
+st.sidebar.write("Use the form to create an event.")
+st.sidebar.button("Create Event", on_click=lambda: switch_page("Create Event"))
 
-
-# List of event categories
-st.sidebar.header("Host or Book an event now!")
-st.sidebar.write("Do you want to book or create you own event?")
-create_event_button = st.sidebar.button("Click here")
-if create_event_button:
-    switch_page = "WillMo Event Hub" 
+st.sidebar.write("Want to see more events?")
+st.sidebar.button("Go to Events", on_click=lambda: switch_page("Events"))

@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import folium
 from folium.plugins import Draw
 from streamlit_folium import st_folium
@@ -7,12 +7,9 @@ from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page  # Importing the switch_page method
 import re
 
-
-
 def validate_account_number(account_number):
     """Validate account number. South African account numbers are 10-12 digits long."""
     return bool(re.match(r"^\d{10,12}$", account_number))
-
 
 def get_customer_details(email):
     """Fetch customer details based on email."""
@@ -24,24 +21,22 @@ def get_customer_details(email):
     st.error("Database connection failed.")
     return None
 
-
-def insert_location(province, city, latitude, longitude):
+def insert_location(province, city, latitude, longitude, venue_title):
     """Insert location into database and return location_id."""
     conn = connect_to_database()
     if conn:
         with conn.cursor() as cursor:
             google_maps = f"{latitude},{longitude}"
             cursor.execute("""
-                INSERT INTO "Location" (province, city, google_maps)
-                VALUES (%s, %s, %s)
+                INSERT INTO "Location" (province, city, google_maps, venue_title)
+                VALUES (%s, %s, %s, %s)
                 RETURNING location_id
-            """, (province, city, google_maps))
+            """, (province, city, google_maps, venue_title))
             location_id = cursor.fetchone()[0]
             conn.commit()
             return location_id
     st.error("Location insertion failed.")
     return None
-
 
 def insert_category(category):
     """Insert category only if it doesn't exist, then return category_id."""
@@ -59,13 +54,12 @@ def insert_category(category):
     st.error("Category insertion failed.")
     return None
 
-
-def create_event(event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, province, city, category, organizer_email, bank_name, account_number, account_holder, bank_code, latitude, longitude):
+def create_event(event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, province, city, venue_title, category, organizer_email, bank_name, account_number, account_holder, bank_code, latitude, longitude):
     """Create a new event and insert it into the database."""
     conn = connect_to_database()
     if conn:
         with conn.cursor() as cursor:
-            location_id = insert_location(province, city, latitude, longitude) if category != "Online Event" else None
+            location_id = insert_location(province, city, latitude, longitude, venue_title) if category != "Online Event" else None
             category_id = insert_category(category)
 
             cursor.execute("""
@@ -84,18 +78,14 @@ def create_event(event_title, description, start_date, start_time, capacity, qua
                 INSERT INTO "Events" (event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, location_id, category_id, organizer_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, location_id, category_id, organizer_id))
-             
-            if st.button("Track Event"):
-                switch_page("tracking_py")
+
             conn.commit()
             st.success("Event created successfully!")
 
-            # Show 'Track Event' button after event is created
-          
-
+            if st.button("Track Event"):
+                switch_page("tracking_py")
     else:
         st.error("Unable to connect to the database.")
-
 
 def display_create_event_page():
     """Render the event creation page."""
@@ -124,10 +114,10 @@ def display_create_event_page():
     start_time = st.time_input("Event Time")
     capacity = st.number_input("Event Capacity", min_value=1)
     quantity = st.number_input("Ticket Quantity", min_value=1)
+   
     price = st.number_input("Ticket Price (R)", min_value=0.0, format="%.2f")
     event_url = st.text_input("Event URL", disabled=(category not in ["Online Event", "Hybrid Event"]))
     
-    # Image selection
     st.subheader("Event Image")
     image_option = st.radio("Choose which method to upload your picture", ["Upload Image", "Use Image URL"])
 
@@ -150,11 +140,11 @@ def display_create_event_page():
         st.subheader("Event Location")
         province = st.text_input("Province")
         city = st.text_input("City")
+        venue_title = st.text_input("Venue Title (e.g., Stadium Name, Conference Hall)")
 
         latitude, longitude = None, None
         map_location = folium.Map(location=[-26.2041, 28.0473], zoom_start=10)
 
-        # Enable only marker drawing
         draw = Draw(export=True, draw_options={"marker": True, "polyline": False, "polygon": False, "rectangle": False, "circle": False})
         draw.add_to(map_location)
 
@@ -166,36 +156,14 @@ def display_create_event_page():
                 longitude, latitude = drawn_data["geometry"]["coordinates"]
                 st.write(f"Coordinates: Latitude: {latitude}, Longitude: {longitude}")
     else:
-        province, city, latitude, longitude = None, None, None, None  # Disable location input
+        province, city, venue_title, latitude, longitude = None, None, None, None, None
 
     st.subheader("Banking Details")
     
-    BANK_CODES = {
-        "Absa": "632005",
-        "Capitec": "470010",
-        "FNB": "250655",
-        "Nedbank": "198765",
-        "Standard Bank": "051001",
-        "Investec": "580105",
-        "Bidvest Bank": "462005",
-        "African Bank": "430000",
-        "Bank of China": "410506",
-        "Bank of Baroda": "462005",
-        "Citibank": "462005",
-        "HSBC": "462 005",
-        "Sasfin Bank": "462005",
-        "Discovery Bank": "679000",
-        "Old Mutual Bank": "462005",
-        "Rand Merchant Bank": "261251",
-        "RMB Private Bank": "222026",
-        "SA Post Bank": "460005",
-        "Bank of Athens": "410506"
-    }
-
-    bank_name = st.selectbox("Bank Name", list(BANK_CODES.keys()))
+    bank_name = st.selectbox("Bank Name", ["Absa", "Capitec", "FNB", "Nedbank", "Standard Bank"])
     account_number = st.text_input("Bank Account Number")
     account_holder = st.text_input("Account Holder Name")
-    bank_code = BANK_CODES[bank_name]
+    bank_code = "000000"  # Placeholder, replace with actual bank codes if needed
     st.write("**Bank Code**:", bank_code)
 
     if st.button("Create Event"):
@@ -203,8 +171,10 @@ def display_create_event_page():
             st.error("Please enter a valid account number.")
          elif image is None:
             st.error("Please upload an event image or provide an image URL.")
+         elif quantity > capacity:
+             st.error("Ticket quantity cannot exceed event capacity.")
          else:
-            create_event(event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, province, city, category, email, bank_name, account_number, account_holder, bank_code, latitude, longitude)
-
-
+                create_event(event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, 
+                 province, city, venue_title, category, email, bank_name, account_number, account_holder, 
+                 bank_code, latitude, longitude)
 display_create_event_page()
