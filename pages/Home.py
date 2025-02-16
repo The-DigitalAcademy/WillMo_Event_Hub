@@ -5,7 +5,6 @@ from datetime import date
 from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page
 
-
     
 event_categories = ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"]
 
@@ -127,7 +126,7 @@ def display_event_image(image_path, event_title):
 
 # Streamlit App
 st.set_page_config(layout="wide")
-st.title("🎉 WillMo Event Hub")
+st.title("Welcome to WillMo Event Hub")
 
 # Filters section header
 st.subheader("🔍 Filter Events by Popularity or Date")
