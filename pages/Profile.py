@@ -11,7 +11,7 @@ def connect_to_database():
             port='5432',
             database='willmo',
             user='postgres',
-            password=''  # Avoid hardcoding credentials in the script
+            password='Will'  # Avoid hardcoding credentials in the script
         )
         return connection
     except Exception as e:
