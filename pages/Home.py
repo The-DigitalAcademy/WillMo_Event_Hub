@@ -7,7 +7,7 @@ from streamlit_extras.switch_page_button import switch_page
 
 event_categories = ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"]
 
-# Function to fetch the most booked events
+
 def get_popular_events():
     """Fetch the most popular events based on booking count."""
     conn = connect_to_database()
@@ -50,7 +50,7 @@ def get_popular_events():
             cursor.close()
             conn.close()
 
-# Function to fetch upcoming events with filters
+
 def get_upcoming_events(location=None, category=None, start_date=None):
     """Fetch upcoming events based on optional filters."""
     conn = connect_to_database()
@@ -122,7 +122,7 @@ def display_event_image(image_path, event_title):
     else:
         st.warning("⚠️ No image available for this event.")
 
-# Streamlit App
+
 st.set_page_config(layout="wide")
 st.title("Welcome to WillMo Event Hub")
 logo_path = "WillMo_Logo.jpg"
@@ -171,7 +171,7 @@ st.markdown(
 st.markdown(
     """
     <div class="welcome-message">
-    Welcome to **WillMo Event Hub**, your one-stop platform to discover, create, and manage events effortlessly. 
+    Welcome to WillMo Event Hub, your one-stop platform to discover, create, and manage events effortlessly. 
     Whether you're looking for exciting events to attend or want to host your own, we've got you covered. 
     Explore a wide range of events in various categories, from sports and festivals to online and social gatherings. 
     Join us today and be part of a vibrant event community.
@@ -182,32 +182,32 @@ st.markdown(
 # Filters section header
 st.subheader("Filter Events")
 
-# Filters at the top of the page (not in the sidebar)
+
 show_popular = st.checkbox("Show Popular Events", value=False)
 show_upcoming = st.checkbox("Show Upcoming Events", value=False)
 
-# Search Filter for Upcoming Events
+
 search_query = st.text_input("Search Events", key="search_query")
 
-# Location Filter for Upcoming Events
+
 location_filter = st.text_input("Location", key="location_filter")
 
-# Category Filter for Upcoming Events
+
 category_filter = st.selectbox("Category", event_categories, key="category_filter")
 
-# Date filter for Upcoming Events
+
 start_date_filter = st.date_input("Start Date", value=None, key="start_date_filter")
 
-# Search Button
+
 search_button = st.button("Search Events")
 
-# Left Section - Popular Events or All Events
+
 st.header("Events")
 
-# Always fetch all events if no filter is selected or show filtered events
+
 all_events = get_upcoming_events(location=location_filter, category=category_filter, start_date=start_date_filter)
 
-# If search button is clicked, apply filters
+
 if search_button:
     if show_popular:
         popular_events = get_popular_events()
