@@ -35,15 +35,16 @@ def get_user_data_and_events(email):
         user_data = cursor.fetchone()
 
         if user_data:
-            # Fetch booked events for the user
+            # Fetch booked events for the user, including quantity from Cart
             cursor.execute("""
                 SELECT e.event_title, e.start_date, e.start_time, e.description, 
                        l.venue_title, l.city, l.province, e.event_url, 
-                       l.google_maps
+                       l.google_maps, c.cart_quantity
                 FROM "Events" e
                 JOIN "BookingEventMap" bem ON e.event_id = bem.event_id
                 JOIN "Bookings" b ON bem.booking_id = b.booking_id
                 JOIN "Location" l ON e.location_id = l.location_id
+                JOIN "Cart" c ON c.email = b.email AND c.event_id = e.event_id  -- Corrected join
                 WHERE b.email = %s
             """, (email,))
             booked_events = cursor.fetchall()
@@ -99,7 +100,7 @@ def display_profile_page():
         upcoming_events = [event for event in booked_events if event[1] >= current_date]
         if upcoming_events:
             for event in upcoming_events:
-                event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps = event
+                event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps, cart_quantity = event
 
                 # Display event title and date/time
                 st.write(f"### {event_title}")
@@ -110,6 +111,9 @@ def display_profile_page():
 
                 # Display event description
                 st.write(f"**Description**: {description}")
+
+                # Display the number of tickets bought
+                st.write(f"**Tickets Purchased**: {cart_quantity}")
 
                 # Display event URL if available
                 if event_url:
@@ -128,7 +132,7 @@ def display_profile_page():
         past_events = [event for event in booked_events if event[1] < current_date]
         if past_events:
             for event in past_events:
-                event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps = event
+                event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps, cart_quantity = event
 
                 # Display event title and date/time
                 st.write(f"### {event_title} (Past Event)")
@@ -139,6 +143,9 @@ def display_profile_page():
 
                 # Display event description
                 st.write(f"**Description**: {description}")
+
+                # Display the number of tickets bought
+                st.write(f"**Tickets Purchased**: {cart_quantity}")
 
                 # Display event URL if available
                 if event_url:

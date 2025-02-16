@@ -36,6 +36,7 @@ def process_payment():
     st.subheader("Review Your Cart")
 
     total_cart_price = 0
+    event_ids = []  # Track event_ids for insertion into "Bookings"
 
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -67,14 +68,16 @@ def process_payment():
 
         st.markdown("---")
         total_cart_price += total_price
+        event_ids.append(event_id)  # Add event_id to the list
 
     st.write(f"**Total Cart Price**: R{total_cart_price}")
 
     # Handle the booking and payment process
     try:
+        # Insert into "Bookings" table (now with event_id)
         cursor.execute(
-            'INSERT INTO "Bookings" (email, booking_date, status) VALUES (%s, current_timestamp, %s) RETURNING booking_id',
-            (email, 'pending')  # Status is set to 'pending' initially
+            'INSERT INTO "Bookings" (email, booking_date, status, event_id) VALUES (%s, current_timestamp, %s, %s) RETURNING booking_id',
+            (email, 'pending', event_ids[0])  # Assuming the booking has one event_id for simplicity
         )
         booking_id_result = cursor.fetchone()
         if booking_id_result:
@@ -86,10 +89,12 @@ def process_payment():
 
         conn.commit()  # Commit the insertion of the booking
 
+        # Insert into "BookingEventMap" for each cart item (removed quantity)
         for item in st.session_state.cart:
             event_id = item["event_id"]
             quantity = item["quantity"]
 
+            # Insert only booking_id and event_id into BookingEventMap
             cursor.execute(
                 'INSERT INTO "BookingEventMap" (booking_id, event_id) VALUES (%s, %s)',
                 (booking_id, event_id)
@@ -122,8 +127,6 @@ def process_payment():
         st.session_state.cart = []
 
         st.success("Payment processed successfully. Your cart has been cleared.")
-        if st.button("Go to my Profile"):
-            switch_page("Profile")
 
     except Exception as e:
         conn.rollback()
@@ -142,6 +145,8 @@ def display_payment_page():
             process_payment()
     else:
         st.warning("Your cart is empty.")
+        if st.button("Go to my Profile"):
+            switch_page("Profile")
 
 # Run the display_payment_page function
 display_payment_page()
