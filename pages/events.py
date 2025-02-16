@@ -1,105 +1,143 @@
 import streamlit as st
+import pandas as pd
 import os
 from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page
 
-# Define the local image directory (update this path accordingly)
-IMAGE_FOLDER = "event_images"
 
-def get_upcoming_events():
-    """Fetch upcoming events from the database."""
-    conn = connect_to_database()
-    if conn is None:
-        return []
-    
+def fetch_events(connection, query, params):
     try:
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT e.event_id, e.image, l.province, l.city, e.description, e.price, e.quantity, e.event_url,
-                   e.event_title, l.venue_title, e.start_date, e.start_time
-            FROM "Events" as e
-            LEFT JOIN "Location" as l ON l.location_id = e.location_id
-            ORDER BY e.start_date ASC
-            LIMIT 6;
-        ''')
-        events = cursor.fetchall()
-        col_names = [desc[0] for desc in cursor.description]
-        return [dict(zip(col_names, row)) for row in events]
-
+        cursor = connection.cursor()
+        cursor.execute(query, params)
+        result = cursor.fetchall()
+        if not result:
+            return pd.DataFrame()
+        columns = ["event_id", "event_title", "image", "start_date", "start_time", "price", "quantity", "category", "city", "province"]
+        events_df = pd.DataFrame(result, columns=columns)
+        return events_df
     except Exception as e:
-        st.error(f"Error fetching events: {e}")
-        return []
+        st.error(f"Error fetching data: {e}")
+        return pd.DataFrame()
 
-    finally:
-        cursor.close()
-        conn.close()
 
-# CSS for styling the event cards
+# CSS for styling the cards
 st.markdown(
     """
     <style>
-    .card-title { font-size: 16px; font-weight: bold; margin: 10px 0; }
-    .card-details { font-size: 14px; color: #666; }
-    .card-price { font-size: 14px; font-weight: bold; margin: 10px 0; color: #444; }
+    .card-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    .card-details {
+        font-size: 14px;
+        color: #666;
+    }
+    .card-price {
+        font-size: 14px;
+        font-weight: bold;
+        margin: 10px 0;
+        color: #444;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
+def display_event_image(image_path, event_title):
+    """Handles both local file paths and URLs for images with size control."""
+    if image_path:
+        if image_path.startswith("http"):
+            st.image(image_path, caption=event_title, use_container_width=False, width=600)
+        else:
+            local_image_path = os.path.join(os.getcwd(), image_path.lstrip("/"))
+            if os.path.exists(local_image_path):
+                st.image(local_image_path, caption=event_title, use_container_width=False, width=600)
+            else:
+                st.warning(f"⚠️ Image not found: {local_image_path}")
+    else:
+        st.warning("⚠️ No image available for this event.")
+
 def display_booking_page():
-    """Displays the event booking page with search and filter options."""
-    st.subheader("Upcoming Events")
+    st.subheader("Search and Filter Events")
+    search_query = st.text_input("Search events by name:", placeholder="Enter event name")
+    selected_date = st.date_input("Select Date", value=None)
+    category = st.multiselect(
+        "Category",
+        ["All", "Charity Event", "Fashion Event", "Festival", "Art Event", 
+         "Social Event", "Sports", "Online Event", "Hybrid Event"]
+    )
+    province = st.multiselect(
+        "Province",
+        ["All", "Gauteng", "KwaZulu-Natal", "Eastern Cape", "Free State", 
+         "Western Cape", "Northern Cape", "North West", "Mpumalanga", "Limpopo"]
+    )
 
-    # Fetch upcoming events
-    events = get_upcoming_events()
-
-    if not events:
-        st.info("No upcoming events found.")
+    connection = connect_to_database()
+    if not connection:
+        st.error("Database connection failed.")
         return
 
-    # Display events in a responsive grid layout
-    cols = st.columns(3)
-    for idx, event in enumerate(events):
-        col = cols[idx % 3]
-        with col:
-            with st.container():
-                st.markdown('<div class="card-container">', unsafe_allow_html=True)
-                
-                # Retrieve the image path/URL from the event data
-                image_path = event['image']
+    filters = []
+    if search_query:
+        filters.append(("e.event_title ILIKE %s", f"%{search_query}%"))
+    if selected_date:
+        filters.append(("e.start_date = %s", selected_date))
+    if category and "All" not in category:
+        filters.append(("LOWER(c.category) IN %s", tuple([cat.lower() for cat in category])))
+    if province and "All" not in province:
+        filters.append(("l.province IN %s", tuple(province)))
 
-                # Handle local file paths
-                if image_path and not image_path.startswith("http"):
-                    # Prepend '.' to make the path relative to the current directory
-                    local_image_path = f".{image_path}"
-                    if os.path.exists(local_image_path):
-                        st.image(local_image_path, caption=event['event_title'], use_container_width=True)
-                    else:
-                        st.warning(f"Image not found: {local_image_path}")
+    query = """
+        SELECT e.event_id, e.event_title, e.image, e.start_date, e.start_time, e.price, e.quantity,
+               c.category, l.city, l.province
+        FROM "Events" e
+        INNER JOIN "Category" c ON e.category_id = c.category_id
+        INNER JOIN "Location" l ON e.location_id = l.location_id
+    """
+    params = []
+    if filters:
+        filter_clauses, params = zip(*filters)
+        query += " WHERE " + " AND ".join(f"({clause})" for clause in filter_clauses)
 
-                # Handle URLs
-                elif image_path and image_path.startswith("http"):
-                    st.image(image_path, caption=event['event_title'], use_container_width=True)
+    events = fetch_events(connection, query, list(params))
 
-                # If no image is available
-                else:
-                    st.warning("No image available for this event.")
+    if not events.empty:
+        st.write(f"Found {len(events)} events:")
+    else:
+        st.info("No events match your search criteria. Showing related events instead.")
 
-                # Display event details
-                st.markdown(f'<div class="card-title">{event["event_title"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="card-details">Date: {event["start_date"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="card-details">Time: {event["start_time"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="card-details">Venue: {event["venue_title"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="card-details">City: {event["city"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="card-details">Province: {event["province"]}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="card-price">Price: R{event["price"]}</div>', unsafe_allow_html=True)
-                
-                # "More Details" button to navigate to event details page
-                if st.button("More Details", key=f"details_{event['event_id']}"):  # Use event_id for a unique key
-                    st.session_state["event_id"] = event['event_id']
-                    switch_page("event_details")
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+        fallback_query = """
+            SELECT e.event_id, e.event_title, e.image, e.start_date, e.start_time, e.price, e.quantity,
+                   c.category, l.city, l.province
+            FROM "Events" e
+            INNER JOIN "Category" c ON e.category_id = c.category_id
+            INNER JOIN "Location" l ON e.location_id = l.location_id
+            WHERE e.start_date >= CURRENT_DATE
+            LIMIT 10
+        """
 
-# Run the function to display the booking page
+        fallback_params = []
+        events = fetch_events(connection, fallback_query, fallback_params)
+
+    for i in range(0, len(events), 3):
+        row_events = events.iloc[i:i + 3]
+        cols = st.columns(3, gap="large")
+        for col, (_, event) in zip(cols, row_events.iterrows()):
+            with col:
+                with st.container():
+                    st.markdown('<div class="card-container">', unsafe_allow_html=True)
+                    display_event_image(event["image"], event["event_title"])  # Using the new function
+                    st.markdown(f'<div class="card-title">{event["event_title"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="card-details">Date: {event["start_date"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="card-details">Time: {event["start_time"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="card-details">Category: {event["category"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="card-details">Province: {event["province"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="card-details">City: {event["city"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="card-price">Price: R{event["price"]}</div>', unsafe_allow_html=True)
+                    if st.button("More Details", key=f"details_{event['event_id']}"):
+                        st.session_state["event_id"] = event["event_id"]
+                        switch_page("event_details")
+                    st.markdown('</div>', unsafe_allow_html=True)
+
 display_booking_page()
