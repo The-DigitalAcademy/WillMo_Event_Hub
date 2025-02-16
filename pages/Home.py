@@ -3,6 +3,8 @@ from streamlit_extras.switch_page_button import switch_page
 import psycopg2
 from establish_connection import connect_to_database
 
+# Page Configuration
+st.set_page_config(page_title="Event Hub - Dashboard", layout="wide")
 
 # Establish Database Connection
 conn = connect_to_database()
@@ -35,11 +37,11 @@ with col1:
     if st.button("View Events", key="book_event"):
         switch_page("events")  
 with col2:
-    if st.button("My Profile", key="Profile"):
-        switch_page("pages/Profile.py") 
+    if st.button("My Profile", key="setting"):
+        switch_page("Profile")  
 with col3:
-    if st.button("Create Event", key="create_event"):
-        switch_page("pages/creating_event.py")
+    if st.button("Create Event", key="creating"):
+        switch_page("creating event") 
 
 
 st.markdown(
@@ -55,7 +57,7 @@ st.markdown(
 st.markdown("---")
 st.write("© 2025 WillMo Event Hub. All rights reserved.")
 
-# Close Database Connection
+
 if conn:
     cursor.close()
     conn.close()
