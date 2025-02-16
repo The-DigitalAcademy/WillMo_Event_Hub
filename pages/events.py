@@ -18,6 +18,7 @@ def fetch_events(connection, query, params):
         st.error(f"Error fetching data: {e}")
         return pd.DataFrame()
 
+
 # CSS for styling the cards
 st.markdown(
     """
@@ -97,23 +98,13 @@ def display_booking_page():
             FROM "Events" e
             INNER JOIN "Category" c ON e.category_id = c.category_id
             INNER JOIN "Location" l ON e.location_id = l.location_id
-            WHERE {category_clause} {province_clause} e.start_date >= CURRENT_DATE
+            WHERE e.start_date >= CURRENT_DATE
             LIMIT 10
         """
 
-        category_clause = "c.category IN %s AND " if category else ""
-        province_clause = "l.province IN %s AND " if province else ""
-
-        fallback_query = fallback_query.format(
-            category_clause=category_clause,
-            province_clause=province_clause
-        )
-
         fallback_params = []
-        if category:
-            fallback_params.append(tuple(category))
-        if province:
-            fallback_params.append(tuple(province))
+        # st.write(f"Running fallback query: {fallback_query}")
+        # st.write(f"Fallback query parameters: {fallback_params}")
 
         events = fetch_events(connection, fallback_query, fallback_params)
 
