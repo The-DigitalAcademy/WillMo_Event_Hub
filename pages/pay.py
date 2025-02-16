@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
-import pandas as pd
 
 # Function to connect to the database
 def connect_to_database():
@@ -9,9 +8,9 @@ def connect_to_database():
         connection = psycopg2.connect(
             host='localhost',
             port='5432',
-            database='willmo',  # Replace with your actual database name
-            user='postgres',     # Replace with your PostgreSQL username
-            password='Will'      # Replace with your PostgreSQL password
+            database='willmo',
+            user='postgres',
+            password='Will'
         )
         return connection
     except Exception as e:
@@ -31,14 +30,33 @@ def process_payment():
 
     if "cart" not in st.session_state or not st.session_state.cart:
         st.warning("Your cart is empty. Add items before proceeding.")
-        return
 
-    # Convert cart data to a DataFrame
-    cart_data = pd.DataFrame(st.session_state.cart)
+    # Display cart items in a more detailed and user-friendly way
+    st.subheader("Review Your Cart")
 
-    # Display the cart as a table
-    st.subheader("Your Cart")
-    st.dataframe(cart_data)
+    total_cart_price = 0
+
+    # Display each event in the cart
+    for item in st.session_state.cart:
+        event_title = item.get('event_title', 'Unknown Event')
+        event_image = item.get('event_image', None)
+        quantity = item.get('quantity', 1)
+        price = item.get('price', 0)
+        total_price = quantity * price
+
+        st.write(f"**Event Title**: {event_title}")
+        st.write(f"**Quantity**: {quantity}")
+        st.write(f"**Price per Ticket**: R{price}")
+        st.write(f"**Total Price**: R{total_price}")
+
+        if event_image:
+            st.image(event_image, width=150)
+
+        st.markdown("---")  # Add a separator between events
+
+        total_cart_price += total_price
+
+    st.write(f"**Total Cart Price**: R{total_cart_price}")
 
     conn = connect_to_database()
     if not conn:
@@ -48,26 +66,25 @@ def process_payment():
     cursor = conn.cursor()
 
     try:
-        # Step 1: Insert a new booking record into the Bookings table
+        # Step 1: Insert a new booking record into the Bookings table with status "pending"
         cursor.execute(
             'INSERT INTO "Bookings" (email, booking_date, status) VALUES (%s, current_timestamp, %s) RETURNING booking_id',
-            (email, 'confirmed')
+            (email, 'pending')
         )
-        # Fetch the booking_id from the returned result
         booking_id_result = cursor.fetchone()
         if booking_id_result:
             booking_id = booking_id_result[0]
         else:
             st.error("Failed to generate booking ID.")
-            conn.rollback()
+            conn.rollback()  # Rollback in case of failure
             return
 
         conn.commit()  # Commit the insertion of the booking
 
-        # Step 2: Iterate over the DataFrame and update the database
-        for index, row in cart_data.iterrows():
-            event_id = row["event_id"]
-            quantity = row["quantity"]
+        # Step 2: Iterate over the cart data and update the database
+        for item in st.session_state.cart:
+            event_id = item["event_id"]
+            quantity = item["quantity"]
 
             # Insert into BookingEventMap table
             cursor.execute(
@@ -95,7 +112,14 @@ def process_payment():
 
         conn.commit()
 
-        # Step 3: Clear the cart
+        # Step 3: Change the booking status to 'confirmed' after payment is successful
+        cursor.execute(
+            'UPDATE "Bookings" SET status = %s WHERE booking_id = %s',
+            ('confirmed', booking_id)  # Update the status to 'confirmed'
+        )
+        conn.commit()
+
+        # Step 4: Clear the cart
         st.session_state.cart = []
 
         # Confirmation message

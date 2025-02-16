@@ -45,33 +45,77 @@ def fetch_user_details(email):
                 }
     return None
 
+def handle_add_to_cart(event_id, quantity, event_details, available_quantity, email):
+    connection = connect_to_database()
+    event_in_cart = False
+
+    # Prevent adding to the cart if the quantity exceeds available tickets
+    if quantity > available_quantity:
+        st.error(f"Cannot add {quantity} tickets. Only {available_quantity} remaining.")
+        return  # Don't add to cart if quantity exceeds available tickets
+
+    # Check if the event already exists in the cart
+    for item in st.session_state.cart:
+        if item["event_id"] == event_id:
+            if item["quantity"] + quantity > available_quantity:
+                st.error(f"Cannot add {quantity} tickets. Only {available_quantity - item['quantity']} remaining.")
+                return  # Stop if adding exceeds available tickets
+            else:
+                item["quantity"] += quantity
+                item["total_price"] = item["quantity"] * event_details["price"]
+                event_in_cart = True
+                st.success(f"Updated {event_details['event_title']} quantity to {item['quantity']}.")
+
+                # Update the quantity in the database
+                cursor = connection.cursor()
+                cursor.execute("""
+                    UPDATE "Cart" 
+                    SET cart_quantity = %s 
+                    WHERE email = %s AND event_id = %s
+                """, (item["quantity"], email, event_id))
+                connection.commit()
+                st.success(f"Updated {event_details['event_title']} in the database.")
+            break
+
+    # If the event is not in the cart, add it if the quantity is valid
+    if not event_in_cart:
+        if quantity <= available_quantity:
+            cart_item = {
+                "event_id": event_id,
+                "event_title": event_details["event_title"],
+                "quantity": quantity,
+                "total_price": event_details["price"] * quantity
+            }
+            st.session_state.cart.append(cart_item)
+            st.success(f"Added {event_details['event_title']} to the cart with quantity {quantity}.")
+
+            # Insert new cart item into the database
+            cursor = connection.cursor()
+            cursor.execute("""
+                INSERT INTO "Cart" (email, event_id, cart_quantity) 
+                VALUES (%s, %s, %s)
+            """, (email, event_id, quantity))
+            connection.commit()
+
+    connection.close()
+
+
 # Checkout page function
 def display_checkout_page():
-    # Create two columns, one for the title and another for the "Go to Cart" button
     col1, col2 = st.columns([2, 1])
 
-    # Title in the first column
     with col1:
         st.title("Checkout")
 
-    # "Go to Cart" button in the second column
-    # with col2:
-    #     st.write("")  # Just to align with top right
-    #     if st.button("Go to Cart"):
-    #         switch_page("Cart")
-
-    # Check if user is logged in by checking if email is present in session state
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         st.warning("You must be signed in to proceed.")
         if st.button("Sign Up"):
             switch_page("Signup")
         return
 
-    # Get user's email from session state (assuming it's saved during login)
     email = st.session_state.get("email", None)
     
     if email:
-        # Fetch user details from the database using email
         user_details = fetch_user_details(email)
         if user_details:
             full_name = f"{user_details['name']} {user_details['surname']}"
@@ -84,7 +128,6 @@ def display_checkout_page():
         st.error("No email found. Please log in.")
         return
 
-    # Get the event details (from session state or DB)
     event_id = st.session_state.get("event_id", None)
     event_details = fetch_event_details(event_id)
 
@@ -94,7 +137,6 @@ def display_checkout_page():
         available_quantity = event_details["available_quantity"]
 
         if available_quantity > 0:
-            # Quantity and price update
             quantity = st.number_input(
                 "Select Quantity",
                 min_value=1,
@@ -104,37 +146,18 @@ def display_checkout_page():
             price = event_price * quantity
             st.write(f"**Total Price:** R{price}")
 
-            # Layout buttons neatly using columns for the rest
             col1, col2 = st.columns([1, 2])
 
-            # Add to Cart Button in first column
             with col1:
                 if st.button("Add to Cart"):
-                    # Check if the event already exists in the cart
                     if "cart" not in st.session_state:
                         st.session_state.cart = []
 
-                    event_in_cart = False
-                    for item in st.session_state.cart:
-                        if item["event_id"] == event_id:
-                            if item["quantity"] + quantity > available_quantity:
-                                st.error(f"Cannot add {quantity} tickets. Only {available_quantity - item['quantity']} remaining.")
-                            else:
-                                item["quantity"] += quantity
-                                item["total_price"] = item["quantity"] * event_price
-                                event_in_cart = True
-                                st.success(f"Updated {event_details['event_title']} quantity to {item['quantity']}.")
-                            break
+                    handle_add_to_cart(event_id, quantity, event_details, available_quantity, email)
 
-                    if not event_in_cart:
-                        cart_item = {
-                            "event_id": event_id,
-                            "event_title": event_details["event_title"],
-                            "quantity": quantity,
-                            "total_price": price
-                        }
-                        st.session_state.cart.append(cart_item)
-                        st.success(f"Added {event_details['event_title']} to the cart with quantity {quantity}.")
+            with col2:
+                if st.button("Back to Event Details"):
+                    switch_page("event_details")
         else:
             st.error("This event is sold out.")
             return
@@ -142,11 +165,6 @@ def display_checkout_page():
     else:
         st.error("Event details not found.")
         return
-
-    # Back to Event Details Button in second column
-    with col2:
-        if st.button("Back to Event Details"):
-            switch_page("event_details")
 
 # Display checkout page
 display_checkout_page()

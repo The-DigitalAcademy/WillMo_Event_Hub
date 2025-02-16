@@ -3,6 +3,7 @@ import pandas as pd
 from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page
 
+
 def fetch_events(connection, query, params):
     try:
         cursor = connection.cursor()
@@ -123,7 +124,7 @@ def display_booking_page():
             with col:
                 with st.container():
                     st.markdown('<div class="card-container">', unsafe_allow_html=True)
-                    st.image(event["image"], use_container_width=True, caption=None)
+                    st.image(event["image"], use_container_width=True, caption=None, width=300)
                     st.markdown(f'<div class="card-title">{event["event_title"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Date: {event["start_date"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Time: {event["start_time"]}</div>', unsafe_allow_html=True)
