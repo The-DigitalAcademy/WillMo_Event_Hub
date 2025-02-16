@@ -4,15 +4,15 @@ from folium.plugins import Draw
 from streamlit_folium import st_folium
 import os
 from establish_connection import connect_to_database
-from streamlit_extras.switch_page_button import switch_page  # Importing the switch_page method
+from streamlit_extras.switch_page_button import switch_page 
 import re
 
 def validate_account_number(account_number):
-    """Validate account number. South African account numbers are 10-12 digits long."""
+    """Validate SA account number"""
     return bool(re.match(r"^\d{10,12}$", account_number))
 
+#Fetch data 
 def get_customer_details(email):
-    """Fetch customer details based on email."""
     conn = connect_to_database()
     if conn:
         with conn.cursor() as cursor:
@@ -21,8 +21,8 @@ def get_customer_details(email):
     st.error("Database connection failed.")
     return None
 
+#insert location and location_id to databaase
 def insert_location(province, city, latitude, longitude, venue_title):
-    """Insert location into database and return location_id."""
     conn = connect_to_database()
     if conn:
         with conn.cursor() as cursor:
@@ -38,8 +38,8 @@ def insert_location(province, city, latitude, longitude, venue_title):
     st.error("Location insertion failed.")
     return None
 
+#Insert category to database
 def insert_category(category):
-    """Insert category only if it doesn't exist, then return category_id."""
     conn = connect_to_database()
     if conn:
         with conn.cursor() as cursor:
@@ -54,8 +54,8 @@ def insert_category(category):
     st.error("Category insertion failed.")
     return None
 
+#New event created and stored in database
 def create_event(event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, province, city, venue_title, category, organizer_email, bank_name, account_number, account_holder, bank_code, latitude, longitude):
-    """Create a new event and insert it into the database."""
     conn = connect_to_database()
     if conn:
         with conn.cursor() as cursor:
@@ -83,12 +83,11 @@ def create_event(event_title, description, start_date, start_time, capacity, qua
             st.success("Event created successfully!")
 
             if st.button("Track Event"):
-                switch_page("tracking_py")
+                switch_page("events")
     else:
         st.error("Unable to connect to the database.")
 
 def display_create_event_page():
-    """Render the event creation page."""
     st.title("Create New Event")
     email = st.session_state.get("email", "")
 

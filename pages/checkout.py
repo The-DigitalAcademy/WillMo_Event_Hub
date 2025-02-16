@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 from establish_connection import connect_to_database
 
-# Function to fetch event details (including price and available tickets)
+# Function to fetch event details 
 def fetch_event_details(event_id):
     connection = connect_to_database()
     if connection:
@@ -24,7 +24,7 @@ def fetch_event_details(event_id):
                 }
     return None
 
-# Function to fetch user details (name, email, etc.) based on email
+# Function to fetch user details
 def fetch_user_details(email):
     connection = connect_to_database()
     if connection:
@@ -49,17 +49,17 @@ def handle_add_to_cart(event_id, quantity, event_details, available_quantity, em
     connection = connect_to_database()
     event_in_cart = False
 
-    # Prevent adding to the cart if the quantity exceeds available tickets
+    ##exceeding quantity
     if quantity > available_quantity:
         st.error(f"Cannot add {quantity} tickets. Only {available_quantity} remaining.")
-        return  # Don't add to cart if quantity exceeds available tickets
+        return  
 
     # Check if the event already exists in the cart
     for item in st.session_state.cart:
         if item["event_id"] == event_id:
             if item["quantity"] + quantity > available_quantity:
                 st.error(f"Cannot add {quantity} tickets. Only {available_quantity - item['quantity']} remaining.")
-                return  # Stop if adding exceeds available tickets
+                return  
             else:
                 item["quantity"] += quantity
                 item["total_price"] = item["quantity"] * event_details["price"]
@@ -77,7 +77,7 @@ def handle_add_to_cart(event_id, quantity, event_details, available_quantity, em
                 st.success(f"Updated {event_details['event_title']} in the database.")
             break
 
-    # If the event is not in the cart, add it if the quantity is valid
+    # If the event is not in the cart, add it 
     if not event_in_cart:
         if quantity <= available_quantity:
             cart_item = {
@@ -166,5 +166,5 @@ def display_checkout_page():
         st.error("Event details not found.")
         return
 
-# Display checkout page
+
 display_checkout_page()

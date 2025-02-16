@@ -2,21 +2,24 @@ import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
 import pandas as pd
+import os
+from establish_connection import connect_to_database
 
-# Function to connect to the database
-def connect_to_database():
-    try:
-        connection = psycopg2.connect(
-            host='localhost',
-            port='5432',
-            database='willmo',  # Replace with your actual database name
-            user='postgres',     # Replace with your PostgreSQL username
-            password='Will'      # Replace with your PostgreSQL password
-        )
-        return connection
-    except Exception as e:
-        st.error(f"Error connecting to the database: {e}")
-        return None
+
+    
+# Function to handle event images
+def display_event_image(image_path, event_title):
+    if image_path:
+        if image_path.startswith("http"):
+            st.image(image_path, caption=event_title, use_container_width=False, width=150)
+        else:
+            local_image_path = os.path.join(os.getcwd(), image_path.lstrip("/"))
+            if os.path.exists(local_image_path):
+                st.image(local_image_path, caption=event_title, use_container_width=False, width=150)
+            else:
+                st.warning(f"⚠️ Image not found: {local_image_path}")
+    else:
+        st.warning("⚠️ No image available for this event.")
 
 # Function to process the payment and update the booking
 def process_payment():
@@ -32,7 +35,7 @@ def process_payment():
     if "cart" not in st.session_state or not st.session_state.cart:
         st.warning("Your cart is empty. Add items before proceeding.")
 
-    # Display cart items in a more detailed and user-friendly way
+    # Display cart items 
     st.subheader("Review Your Cart")
 
     total_cart_price = 0
@@ -45,7 +48,7 @@ def process_payment():
         event_id = item.get("event_id")
         quantity = item.get("quantity", 1)
 
-        # Fetch event details, including price, from the database
+        # Fetch event details from the database
         cursor.execute(
             'SELECT event_title, image, price FROM "Events" WHERE event_id = %s',
             (event_id,),
@@ -63,8 +66,7 @@ def process_payment():
         st.write(f"**Price per Ticket**: R{price}")
         st.write(f"**Total Price**: R{total_price}")
 
-        if event_image:
-            st.image(event_image, width=150)
+        display_event_image(event_image, event_title)
 
         st.markdown("---")
         total_cart_price += total_price
@@ -74,10 +76,10 @@ def process_payment():
 
     # Handle the booking and payment process
     try:
-        # Insert into "Bookings" table (now with event_id)
+        # Insert into "Bookings" table 
         cursor.execute(
             'INSERT INTO "Bookings" (email, booking_date, status, event_id) VALUES (%s, current_timestamp, %s, %s) RETURNING booking_id',
-            (email, 'pending', event_ids[0])  # Assuming the booking has one event_id for simplicity
+            (email, 'pending', event_ids[0]) 
         )
         booking_id_result = cursor.fetchone()
         if booking_id_result:
@@ -87,14 +89,14 @@ def process_payment():
             conn.rollback()
             return
 
-        conn.commit()  # Commit the insertion of the booking
+        conn.commit()
 
-        # Insert into "BookingEventMap" for each cart item (removed quantity)
+        # Insert into "BookingEventMap" for each cart item 
         for item in st.session_state.cart:
             event_id = item["event_id"]
             quantity = item["quantity"]
 
-            # Insert only booking_id and event_id into BookingEventMap
+            # Insert booking_id and event_id into BookingEventMap
             cursor.execute(
                 'INSERT INTO "BookingEventMap" (booking_id, event_id) VALUES (%s, %s)',
                 (booking_id, event_id)
@@ -148,5 +150,5 @@ def display_payment_page():
         if st.button("Go to my Profile"):
             switch_page("Profile")
 
-# Run the display_payment_page function
+
 display_payment_page()

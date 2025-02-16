@@ -1,12 +1,8 @@
 import bcrypt
 import psycopg2 as ps
 import streamlit as st
-import re  # For email validation
+import re 
 from streamlit_extras.switch_page_button import switch_page
-
-# Hide the sidebar on this page
-st.set_page_config(page_title="events", page_icon=":guardsman:", layout="wide")
-
 
 # Connect to the PostgreSQL database server
 connection = ps.connect(
@@ -45,7 +41,6 @@ def register_user(contact, name, surname, email, password):
             VALUES (%s, %s, %s, %s, %s)
         """, (contact, name, surname, email, hashed_password))
 
-        # Commit to save the changes
         connection.commit()
 
 # Function to check if the login details are correct
@@ -59,8 +54,8 @@ def login_user(email, password):
             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 st.success("Logged in successfully!")
                 st.session_state["logged_in"] = True
-                st.session_state["email"] = email  # Store the user's email
-                switch_page("Home")  # Redirect to home page after login
+                st.session_state["email"] = email 
+                switch_page("Home")  
             else:
                 st.error("Incorrect password!")
         else:
@@ -130,13 +125,13 @@ elif view == "Don't have an account? Register":
             elif is_email_or_contact_exists(reg_email, contact):
                 st.error("Email or Contact already exists! Please log in.")
             else:
-                # Register the user if all validations pass
+                # Register the user if all validations are right
                 register_user(contact, name, surname, reg_email, reg_password)
                 st.session_state["registration_success"] = True
 
     if 'registration_success' in st.session_state and st.session_state.registration_success:
         st.success(f"Registration successful! Welcome, {name}.")
         st.session_state.registration_success = False
-        st.session_state["logged_in"] = True  # Automatically log in the user after registration
-        st.session_state["email"] = reg_email  # Store the user's email
-        switch_page("Home")  # Redirect to home page after successful registration
+        st.session_state["logged_in"] = True 
+        st.session_state["email"] = reg_email 
+        switch_page("Home") 

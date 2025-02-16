@@ -5,7 +5,6 @@ from streamlit_extras.switch_page_button import switch_page
 
 # Function to display event image
 def display_event_image(image_path, event_title):
-    """Handles both local file paths and URLs for images with size control."""
     if image_path:
         if image_path.startswith("http"):
             st.image(image_path, caption=event_title, use_container_width=False, width=1000)
@@ -64,23 +63,18 @@ def display_event_details():
         st.title("Event Details")
         event_details = fetch_event_details(event_id)
         if event_details:
-            # Display Event Image
-            display_event_image(event_details['image'], event_details['event_title'])
 
-            # Display Event Title
+            display_event_image(event_details['image'], event_details['event_title'])
             st.header(event_details['event_title'])
 
-            # Event Description
             st.subheader("Description")
             st.write(event_details['description'])
 
-            # Event Location
             st.subheader("Location")
             st.write(f"**Venue:** {event_details['venue_title']}")
             st.write(f"**City:** {event_details['city']}, {event_details['province']}")
             st.write(f"**Google Maps:** [View Location]({event_details['google_maps']})")
 
-            # Ticket Information
             st.subheader("Ticket Information")
             st.write(f"**Price:** R{event_details['price']}")
             st.write(f"**Available Tickets:** {event_details['quantity']}")
@@ -101,5 +95,5 @@ def display_event_details():
     else:
         st.error("No event selected.")
 
-# Display event details
+
 display_event_details()

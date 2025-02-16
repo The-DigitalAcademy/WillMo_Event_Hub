@@ -45,7 +45,6 @@ st.markdown(
 )
 
 def display_event_image(image_path, event_title):
-    """Handles both local file paths and URLs for images with size control."""
     if image_path:
         if image_path.startswith("http"):
             st.image(image_path, caption=event_title, use_container_width=False, width=200)
@@ -127,7 +126,7 @@ def display_booking_page():
             with col:
                 with st.container():
                     st.markdown('<div class="card-container">', unsafe_allow_html=True)
-                    display_event_image(event["image"], event["event_title"])  # Using the new function
+                    display_event_image(event["image"], event["event_title"])
                     st.markdown(f'<div class="card-title">{event["event_title"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Date: {event["start_date"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Time: {event["start_time"]}</div>', unsafe_allow_html=True)
@@ -137,7 +136,7 @@ def display_booking_page():
                     st.markdown(f'<div class="card-price">Price: R{event["price"]}</div>', unsafe_allow_html=True)
                     if st.button("More Details", key=f"details_{event['event_id']}"):
                         st.session_state["event_id"] = event["event_id"]
-                        switch_page("event_details")  # Correct page name without .py
+                        switch_page("event_details")  
                     st.markdown('</div>', unsafe_allow_html=True)
 
 display_booking_page()

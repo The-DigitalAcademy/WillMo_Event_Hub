@@ -3,8 +3,6 @@ from streamlit_extras.switch_page_button import switch_page
 import psycopg2
 from establish_connection import connect_to_database
 
-# Page Configuration
-st.set_page_config(page_title="Event Hub - Dashboard", layout="wide")
 
 # Establish Database Connection
 conn = connect_to_database()
@@ -35,15 +33,15 @@ st.subheader("Explore upcoming events and create your own events.")
 col1, col2, col3 = st.columns(3)
 with col1:
     if st.button("View Events", key="book_event"):
-        switch_page("events")  # Redirect to Events page
+        switch_page("events")  
 with col2:
     if st.button("My Profile", key="Profile"):
-        switch_page("pages/Profile.py")  # Redirect to Profile page
+        switch_page("pages/Profile.py") 
 with col3:
     if st.button("Create Event", key="create_event"):
-        switch_page("pages/creating_event.py")  # Redirect to Event Creation page
+        switch_page("pages/creating_event.py")
 
-# About the Platform
+
 st.markdown(
     """
     ### Why Use Event Hub?

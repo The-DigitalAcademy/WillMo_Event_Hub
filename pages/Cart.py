@@ -6,7 +6,6 @@ from establish_connection import connect_to_database
 
 # Function to handle event images
 def display_event_image(image_path, event_title):
-    """Handles both local file paths and URLs for images with size control."""
     if image_path:
         if image_path.startswith("http"):
             st.image(image_path, caption=event_title, use_container_width=False, width=150)
@@ -121,5 +120,5 @@ def display_cart():
     cursor.close()
     conn.close()
 
-# Display Cart
+
 display_cart()

@@ -11,7 +11,7 @@ def connect_to_database():
             port='5432',
             database='willmo',
             user='postgres',
-            password=''  # Avoid hardcoding credentials in the script
+            password=''  
         )
         return connection
     except Exception as e:
@@ -21,7 +21,7 @@ def connect_to_database():
 # Function to check if the user is logged in
 def check_logged_in():
     if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
-        switch_page("Signup")  # Redirect to login page if not logged in
+        switch_page("Signup") 
 
 # Function to fetch user data and booked events
 def get_user_data_and_events(email):
@@ -35,7 +35,7 @@ def get_user_data_and_events(email):
         user_data = cursor.fetchone()
 
         if user_data:
-            # Fetch booked events for the user, including quantity from Cart
+            # Fetch booked events for the user
             cursor.execute("""
                 SELECT e.event_title, e.start_date, e.start_time, e.description, 
                        l.venue_title, l.city, l.province, e.event_url, 
@@ -70,7 +70,6 @@ def update_user_details(email, contact, name):
 
 # Function to log out the user
 def logout():
-    # Clear session state and redirect to login page
     del st.session_state["logged_in"]
     del st.session_state["email"]
     st.success("You have been logged out successfully!")
@@ -92,7 +91,7 @@ def display_profile_page():
         st.write(f"**Contact**: {contact}")
         st.write(f"**Email**: {email}")
 
-        # Get the current date for event comparison
+       
         current_date = datetime.now().date()
 
         # Display booked events
@@ -102,24 +101,18 @@ def display_profile_page():
             for event in upcoming_events:
                 event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps, cart_quantity = event
 
-                # Display event title and date/time
                 st.write(f"### {event_title}")
                 st.write(f"**Date**: {start_date} at {start_time}")
 
-                # Display event location (venue, city, province)
                 st.write(f"**Location**: {venue_title}, {city}, {province}")
 
-                # Display event description
                 st.write(f"**Description**: {description}")
 
-                # Display the number of tickets bought
                 st.write(f"**Tickets Purchased**: {cart_quantity}")
 
-                # Display event URL if available
                 if event_url:
                     st.write(f"**Event URL**: [Click here to view event details]({event_url})")
 
-                # Display Google Maps link if available
                 if google_maps:
                     st.write(f"**Google Maps**: [View Location]({google_maps})")
 
@@ -134,24 +127,18 @@ def display_profile_page():
             for event in past_events:
                 event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps, cart_quantity = event
 
-                # Display event title and date/time
                 st.write(f"### {event_title} (Past Event)")
                 st.write(f"**Date**: {start_date} at {start_time}")
 
-                # Display event location (venue, city, province)
                 st.write(f"**Location**: {venue_title}, {city}, {province}")
 
-                # Display event description
                 st.write(f"**Description**: {description}")
 
-                # Display the number of tickets bought
                 st.write(f"**Tickets Purchased**: {cart_quantity}")
 
-                # Display event URL if available
                 if event_url:
                     st.write(f"**Event URL**: [Click here to view event details]({event_url})")
 
-                # Display Google Maps link if available
                 if google_maps:
                     st.write(f"**Google Maps**: [View Location]({google_maps})")
 
@@ -173,12 +160,12 @@ def display_profile_page():
             else:
                 st.warning("No changes were made.")
         
-        # Logout button
+
         if st.button("Logout"):
             logout()
 
     else:
         st.error("User data not found. Please try logging in again.")
 
-# Call the function to display profile page
+
 display_profile_page()
