@@ -1,126 +1,264 @@
 import streamlit as st
-import pandas as pd
+import psycopg2
+import os
+from datetime import date
 from establish_connection import connect_to_database
+from streamlit_extras.switch_page_button import switch_page
 
-st.set_page_config(page_title="WillMo Events Hub", layout="wide")
-st.title("WillMo Events Hub")
-
-st.subheader("Search for an Event")
-
-# List of major South African cities for location filter
-south_african_cities = [
-    "All Locations",
-    "Cape Town",
-    "Johannesburg",
-    "Durban",
-    "Pretoria",
-    "Port Elizabeth",
-    "Bloemfontein",
-    "East London",
-    "Polokwane",
-    "Nelspruit",
-    "Kimberley",
-    "Pietermaritzburg",
-    "Vanderbijlpark",
-    "George",
-    "Rustenburg",
-    "Mbombela",
-    "Tshwane",
-]
-
-event_title_search = st.text_input("Search by event title", "").strip()
-
-location_search = st.selectbox("Filter by location", south_african_cities)
-
-st.subheader("Upcoming Events")
+event_categories = ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"]
 
 
-def get_upcoming_events():
+def get_popular_events():
+    """Fetch the most popular events based on booking count."""
     conn = connect_to_database()
     if conn is None:
         return []
-    
+
     try:
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT  e.image, l.province, l.city, e.description, e.price, e.quantity, e.event_url
-            , e.event_title, l.venue_title, e.start_date, e.start_time
-            FROM "Events" as e
-            LEFT JOIN "Location" as l
-            ON l.location_id = e.location_id;
-        ''')
+            SELECT 
+                e.event_id,
+                e.event_title,
+                e.image,
+                l.city,
+                l.province,
+                l.venue_title,
+                c.category,
+                e.description,
+                e.price,
+                e.quantity,
+                e.event_url
+            FROM "Events" e
+            JOIN "Location" l ON l.location_id = e.location_id
+            JOIN "Category" c ON c.category_id = e.category_id
+            WHERE e.start_date >= %s
+            ORDER BY e.price DESC
+            LIMIT 5;
+        ''', [date.today()])
+
         events = cursor.fetchall()
-
-        # Get column names
         col_names = [desc[0] for desc in cursor.description]
-
-        # Convert rows to dictionaries
-        event_list = [dict(zip(col_names, row)) for row in events]
-
-        return event_list
+        return [dict(zip(col_names, row)) for row in events]
 
     except Exception as e:
-        st.error(f"Error fetching events: {e}")
+        st.error(f"Error fetching popular events: {e}")
         return []
 
     finally:
-        cursor.close()
-        conn.close()
+        if conn:
+            cursor.close()
+            conn.close()
 
 
-events = get_upcoming_events()
+def get_upcoming_events(location=None, category=None, start_date=None):
+    """Fetch upcoming events based on optional filters."""
+    conn = connect_to_database()
+    if conn is None:
+        return []
 
-# Filter events based on search inputs
-filtered_events = []
-for event in events:
-    title_match = event_title_search.lower() in event["event_title"].lower() if event_title_search else True
+    try:
+        cursor = conn.cursor()
+        query = '''
+            SELECT 
+                e.event_id,
+                e.event_title,
+                e.image,
+                l.city,
+                l.province,
+                l.venue_title,
+                c.category,
+                e.description,
+                e.price,
+                e.quantity,
+                e.event_url,
+                e.start_date
+            FROM "Events" e
+            JOIN "Location" l ON l.location_id = e.location_id
+            JOIN "Category" c ON c.category_id = e.category_id
+            WHERE e.start_date >= %s
+        '''
+        params = [date.today()]
+
+        if location:
+            query += " AND l.city ILIKE %s"
+            params.append(f"%{location}%")
+
+        if category:
+            query += " AND c.category ILIKE %s"
+            params.append(f"%{category}%")
+
+        if start_date:
+            query += " AND e.start_date >= %s"
+            params.append(start_date)
+
+        query += " ORDER BY e.start_date ASC LIMIT 5;"
+
+        cursor.execute(query, params)
+        events = cursor.fetchall()
+        col_names = [desc[0] for desc in cursor.description]
+        return [dict(zip(col_names, row)) for row in events]
+
+    except Exception as e:
+        st.error(f"Error fetching upcoming events: {e}")
+        return []
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+def display_event_image(image_path, event_title):
+    """Handles both local file paths and URLs for images with size control."""
+    if image_path:
+        if image_path.startswith("http"):
+            st.image(image_path, caption=event_title, use_container_width=False, width=600)
+        else:
+            local_image_path = os.path.join(os.getcwd(), image_path.lstrip("/"))
+            if os.path.exists(local_image_path):
+                st.image(local_image_path, caption=event_title, use_container_width=False, width=600)
+            else:
+                st.warning(f"⚠️ Image not found: {local_image_path}")
+    else:
+        st.warning("⚠️ No image available for this event.")
+
+
+st.set_page_config(layout="wide")
+st.title("Welcome to WillMo Event Hub")
+logo_path = "WillMo_Logo.jpg"
+logo = st.image(logo_path, width=290)
+
+st.markdown(
+    """
+    <style>
+    .welcome-title {
+        font-size: 36px;
+        font-weight: bold;
+        color: #2E3B4E;
+        text-align: center;
+        margin-top: 20px;
+    }
     
-    # Safeguard for None value in "city" field
-    location_match = location_search == "All Locations" or (event.get("city") and location_search in event["city"])
+    .welcome-message {
+        font-size: 18px;
+        color: #6C7D8C;
+        text-align: center;
+        margin: 20px auto;
+        max-width: 800px;
+    }
 
-    if title_match and location_match:
-        filtered_events.append(event)
-st.markdown("""
-        <style>
-        .event-card {
-            border: 1px solid #ccc;
-            padding: 16px;
-            margin: 10px;
-            border-radius: 8px;
-            width: 400px;
-            height: 500px;
-        }
-        .event-card img {
-            max-height: 200px;
-            margin-bottom: 10px;
-        }
-        .event-card h3 {
-            font-size: 1.2em;
-            margin-bottom: 8px;
-        }
-        .event-card p {
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    .section-header {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2E3B4E;
+        margin-bottom: 15px;
+    }
 
-if filtered_events:
-    cols = st.columns(3)  # Create 3 columns for each row
-    for idx, event in enumerate(filtered_events):
-        col = cols[idx % 3]  # Cycle through columns
-        with col:
-            st.markdown(f"""
-                                <div class="event-card">
-                                    <img src="{event['image']}" alt="Event Image">
-                                    <h3>{event['event_title']}</h3>
-                                    <p><strong>Date:</strong> {event['start_date']}</p>
-                                    <p><strong>Time:</strong> {event['start_time']}</p>
-                                    <p><strong>Location:</strong> {event['city']}, {event['province']}</p>
-                                    <p><strong>Price:</strong> R{event['price']}</p>
-                                    <p><strong>Available Tickets:</strong> {event['quantity']} </p>
-                                </div>
-                            </a>
-                        """, unsafe_allow_html=True)
+    .sidebar-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #2E3B4E;
+    }
+
+    .sidebar-radio {
+        font-size: 16px;
+        color: #6C7D8C;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="welcome-message">
+    Welcome to WillMo Event Hub, your one-stop platform to discover, create, and manage events effortlessly. 
+    Whether you're looking for exciting events to attend or want to host your own, we've got you covered. 
+    Explore a wide range of events in various categories, from sports and festivals to online and social gatherings. 
+    Join us today and be part of a vibrant event community.
+    </div>
+    """, unsafe_allow_html=True
+)
+
+# Filters section header
+st.subheader("Filter Events")
+
+
+show_popular = st.checkbox("Show Popular Events", value=False)
+show_upcoming = st.checkbox("Show Upcoming Events", value=False)
+
+
+search_query = st.text_input("Search Events", key="search_query")
+
+
+location_filter = st.text_input("Location", key="location_filter")
+
+
+category_filter = st.selectbox("Category", event_categories, key="category_filter")
+
+
+start_date_filter = st.date_input("Start Date", value=None, key="start_date_filter")
+
+
+search_button = st.button("Search Events")
+
+
+st.header("Events")
+
+
+all_events = get_upcoming_events(location=location_filter, category=category_filter, start_date=start_date_filter)
+
+
+if search_button:
+    if show_popular:
+        popular_events = get_popular_events()
+        if popular_events:
+            st.subheader("Popular Events")
+            for event in popular_events:
+                with st.container():
+                    st.subheader(event['event_title'])
+                    display_event_image(event['image'], event['event_title'])
+                    st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                    st.write(f"🏟️ **Venue:** {event['venue_title']}")
+                    st.write(f"💰 **Price:** R{event['price']}")
+                    st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
+                    st.markdown(f"[🔗 View Event]({event['event_url']})", unsafe_allow_html=True)
+                    st.divider()
+
+    if show_upcoming:
+        upcoming_events = get_upcoming_events(location=location_filter, category=category_filter, start_date=start_date_filter)
+
+        # Apply search filter if a search query is entered
+        if search_query:
+            upcoming_events = [event for event in upcoming_events if search_query.lower() in event['event_title'].lower() or search_query.lower() in event['description'].lower()]
+
+        if upcoming_events:
+            st.subheader("Upcoming Events")
+            for event in upcoming_events:
+                with st.container():
+                    st.subheader(event['event_title'])
+                    display_event_image(event['image'], event['event_title'])
+                    st.write(f"📅 **Date:** {event['start_date']}")
+                    st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                    st.write(f"🏟️ **Venue:** {event['venue_title']}")
+                    st.write(f"💰 **Price:** R{event['price']}")
+                    st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
+                    st.markdown(f"[🔗 View Event]({event['event_url']})", unsafe_allow_html=True)
+                    st.divider()
+
 else:
-    st.write("No events match your search criteria. Please try different keywords or locations.")
+    # If no filters and no search are applied, display all events
+    if all_events:
+        st.subheader("All Upcoming Events")
+        for event in all_events:
+            with st.container():
+                st.subheader(event['event_title'])
+                display_event_image(event['image'], event['event_title'])
+                st.write(f"📅 **Date:** {event['start_date']}")
+                st.write(f"📍 **Location:** {event['city']}, {event['province']}")
+                st.write(f"🏟️ **Venue:** {event['venue_title']}")
+                st.write(f"💰 **Price:** R{event['price']}")
+                st.write(f"🎟️ **Tickets Left:** {event['quantity']}")
+                st.markdown(f"[🔗 View Event]({event['event_url']})", unsafe_allow_html=True)
+                st.divider()
+    else:
+        st.warning("No events found.")
