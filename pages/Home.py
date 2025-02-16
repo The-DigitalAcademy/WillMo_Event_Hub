@@ -5,7 +5,8 @@ from datetime import date
 from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page
 
-# List of event categories
+
+    
 event_categories = ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"]
 
 # Function to fetch the most booked events
@@ -211,9 +212,11 @@ else:
         st.warning("No events found.")
 
 # Section to Create an Event
-st.sidebar.markdown("---")
-st.sidebar.header("🌟 Host Your Own Event!")
-st.sidebar.write("Did you know you can host your own event on WillMo Event Hub? Create an event now!")
-create_event_button = st.sidebar.button("Create Event")
+
+
+# List of event categories
+st.sidebar.header("Host or Book an event now!")
+st.sidebar.write("Do you want to book or create you own event?")
+create_event_button = st.sidebar.button("Click here")
 if create_event_button:
-    st.switch_page = "create_event" 
+    switch_page = "WillMo Event Hub" 

@@ -1,6 +1,13 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 
+
+st.set_page_config(
+    page_title="WillMo Event Hub",  # Title of the page
+    page_icon="🎉",  # Icon to display in the browser tab
+    layout="wide",  # Layout of the page (wide layout is good for large content)
+    initial_sidebar_state="expanded"  # The initial state of the sidebar (expanded or collapsed)
+)
 # Function to check if the user is logged in
 def check_logged_in():
     if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
