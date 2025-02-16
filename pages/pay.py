@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
 import pandas as pd
+import os
 
 # Function to connect to the database
 def connect_to_database():
@@ -17,6 +18,21 @@ def connect_to_database():
     except Exception as e:
         st.error(f"Error connecting to the database: {e}")
         return None
+
+# Function to display event images
+def display_event_image(image_path, event_title):
+    """Handles both local file paths and URLs for images with size control."""
+    if image_path:
+        if image_path.startswith("http"):
+            st.image(image_path, caption=event_title, use_container_width=False, width=600)
+        else:
+            local_image_path = os.path.join(os.getcwd(), image_path.lstrip("/"))
+            if os.path.exists(local_image_path):
+                st.image(local_image_path, caption=event_title, use_container_width=False, width=600)
+            else:
+                st.warning(f"⚠️ Image not found: {local_image_path}")
+    else:
+        st.warning("⚠️ No image available for this event.")
 
 # Function to process the payment and update the booking
 def process_payment():
@@ -63,8 +79,7 @@ def process_payment():
         st.write(f"**Price per Ticket**: R{price}")
         st.write(f"**Total Price**: R{total_price}")
 
-        if event_image:
-            st.image(event_image, width=150)
+        display_event_image(event_image, event_title)
 
         st.markdown("---")
         total_cart_price += total_price
