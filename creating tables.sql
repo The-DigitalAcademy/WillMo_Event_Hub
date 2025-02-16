@@ -6,10 +6,6 @@ CREATE TABLE "Location" (
   "google_maps" varchar
 );
 
-CREATE TABLE "Type" (
-  "type_id" serial PRIMARY KEY,
-  "type" varchar
-);
 
 CREATE TABLE "Customers" (
   "contact" varchar,
@@ -72,13 +68,6 @@ CREATE TABLE "Bookings" (
   FOREIGN KEY ("event_id") REFERENCES "Events" ("event_id") ON DELETE CASCADE
 );
 
-CREATE TABLE "CustomerType" (
-  "type_id" integer,
-  "email" varchar,
-  PRIMARY KEY ("type_id", "email"),
-  FOREIGN KEY ("type_id") REFERENCES "Type" ("type_id") ON DELETE CASCADE,
-  FOREIGN KEY ("email") REFERENCES "Customers" ("email") ON DELETE CASCADE
-);
 
 CREATE TABLE "BookingEventMap" (
   "booking_id" integer,
