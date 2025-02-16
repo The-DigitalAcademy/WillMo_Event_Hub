@@ -263,10 +263,3 @@ else:
     else:
         st.warning("No events found.")
 
-# Section to Create an Event
-st.sidebar.header("Host or Book an Event Now!")
-st.sidebar.write("Use the form to create an event.")
-st.sidebar.button("Create Event", on_click=lambda: switch_page("Create Event"))
-
-st.sidebar.write("Want to see more events?")
-st.sidebar.button("Go to Events", on_click=lambda: switch_page("Events"))
