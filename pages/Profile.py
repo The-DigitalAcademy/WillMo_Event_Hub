@@ -94,6 +94,8 @@ def display_profile_page():
        
         current_date = datetime.now().date()
 
+        if st.button("Manage Events"):
+            switch_page("edit_event")
         # Display booked events
         st.write("### Your Upcoming Events")
         upcoming_events = [event for event in booked_events if event[1] >= current_date]
@@ -166,6 +168,7 @@ def display_profile_page():
 
     else:
         st.error("User data not found. Please try logging in again.")
+
 
 
 display_profile_page()

@@ -82,8 +82,6 @@ def create_event(event_title, description, start_date, start_time, capacity, qua
             conn.commit()
             st.success("Event created successfully!")
 
-            if st.button("Track Event"):
-                switch_page("events")
     else:
         st.error("Unable to connect to the database.")
 

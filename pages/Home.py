@@ -47,9 +47,9 @@ with col3:
 st.markdown(
     """
     ### Why Use Event Hub?
-    - 🎟️ **Discover & Book Events** – From concerts to conferences, find what excites you!
-    - 🛒 **Manage Your Bookings** – View and track your event reservations.
-    - 🌍 **Secure & Seamless** – Safe transactions and real-time updates.
+    - **Discover & Book Events** – From concerts to conferences, find what excites you!
+    - **Manage Your Bookings** – View and track your event reservations.
+    - **Secure & Seamless** – Safe transactions and real-time updates.
     """
 )
 
