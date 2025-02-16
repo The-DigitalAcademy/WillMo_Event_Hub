@@ -7,7 +7,7 @@ from establish_connection import connect_to_database
 def check_logged_in():
     if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
         st.error("No email found in session. Please log in again.")
-        switch_page("Signup")  # Redirect to the Signup page if not logged in
+        switch_page("Signup")
 
 # Function to display the cart
 def display_cart():
@@ -49,13 +49,13 @@ def display_cart():
                     new_quantity = st.number_input(
                         f"Quantity for {event_title}",
                         min_value=1,
-                        max_value=available_quantity,  # Ensure max value matches the available tickets
+                        max_value=available_quantity,
                         value=current_quantity,
                         key=f"quantity_{i}"
                     )
 
                     if new_quantity != current_quantity:
-                        if new_quantity <= available_quantity:  # Ensure the quantity doesn't exceed available tickets
+                        if new_quantity <= available_quantity:
                             st.session_state.cart[i]["quantity"] = new_quantity
                             st.session_state.cart[i]["total_price"] = new_quantity * price
 

@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
+import pandas as pd
 
 # Function to connect to the database
 def connect_to_database():
@@ -8,9 +9,9 @@ def connect_to_database():
         connection = psycopg2.connect(
             host='localhost',
             port='5432',
-            database='willmo',
-            user='postgres',
-            password='Will'
+            database='willmo',  # Replace with your actual database name
+            user='postgres',     # Replace with your PostgreSQL username
+            password='Will'      # Replace with your PostgreSQL password
         )
         return connection
     except Exception as e:
@@ -36,13 +37,25 @@ def process_payment():
 
     total_cart_price = 0
 
-    # Display each event in the cart
+    conn = connect_to_database()
+    cursor = conn.cursor()
+
     for item in st.session_state.cart:
-        event_title = item.get('event_title', 'Unknown Event')
-        event_image = item.get('event_image', None)
-        quantity = item.get('quantity', 1)
-        price = item.get('price', 0)
-        total_price = quantity * price
+        event_id = item.get("event_id")
+        quantity = item.get("quantity", 1)
+
+        # Fetch event details, including price, from the database
+        cursor.execute(
+            'SELECT event_title, image, price FROM "Events" WHERE event_id = %s',
+            (event_id,),
+        )
+        event_details = cursor.fetchone()
+
+        if event_details:
+            event_title, event_image, price = event_details
+            total_price = quantity * price
+        else:
+            event_title, event_image, price, total_price = "Unknown Event", None, 0, 0
 
         st.write(f"**Event Title**: {event_title}")
         st.write(f"**Quantity**: {quantity}")
@@ -52,47 +65,36 @@ def process_payment():
         if event_image:
             st.image(event_image, width=150)
 
-        st.markdown("---")  # Add a separator between events
-
+        st.markdown("---")
         total_cart_price += total_price
 
     st.write(f"**Total Cart Price**: R{total_cart_price}")
 
-    conn = connect_to_database()
-    if not conn:
-        st.error("Unable to connect to the database.")
-        return
-
-    cursor = conn.cursor()
-
+    # Handle the booking and payment process
     try:
-        # Step 1: Insert a new booking record into the Bookings table with status "pending"
         cursor.execute(
             'INSERT INTO "Bookings" (email, booking_date, status) VALUES (%s, current_timestamp, %s) RETURNING booking_id',
-            (email, 'pending')
+            (email, 'pending')  # Status is set to 'pending' initially
         )
         booking_id_result = cursor.fetchone()
         if booking_id_result:
             booking_id = booking_id_result[0]
         else:
             st.error("Failed to generate booking ID.")
-            conn.rollback()  # Rollback in case of failure
+            conn.rollback()
             return
 
         conn.commit()  # Commit the insertion of the booking
 
-        # Step 2: Iterate over the cart data and update the database
         for item in st.session_state.cart:
             event_id = item["event_id"]
             quantity = item["quantity"]
 
-            # Insert into BookingEventMap table
             cursor.execute(
                 'INSERT INTO "BookingEventMap" (booking_id, event_id) VALUES (%s, %s)',
                 (booking_id, event_id)
             )
 
-            # Check if there are enough tickets available
             cursor.execute(
                 'SELECT quantity FROM "Events" WHERE event_id = %s',
                 (event_id,)
@@ -101,38 +103,31 @@ def process_payment():
 
             if available_quantity < quantity:
                 st.error(f"Not enough tickets available for event ID {event_id}. Available: {available_quantity}.")
-                conn.rollback()  # Rollback if not enough tickets are available
+                conn.rollback()
                 return
 
-            # Update the Events table to reduce ticket quantity
             cursor.execute(
                 'UPDATE "Events" SET quantity = quantity - %s WHERE event_id = %s',
                 (quantity, event_id)
             )
 
-        conn.commit()
-
-        # Step 3: Change the booking status to 'confirmed' after payment is successful
+        # Change the booking status to 'confirmed' after payment is successful
         cursor.execute(
             'UPDATE "Bookings" SET status = %s WHERE booking_id = %s',
-            ('confirmed', booking_id)  # Update the status to 'confirmed'
+            ('confirmed', booking_id)
         )
         conn.commit()
 
-        # Step 4: Clear the cart
+        # Clear the cart
         st.session_state.cart = []
 
-        # Confirmation message
         st.success("Payment processed successfully. Your cart has been cleared.")
-
-        # Redirect to another page if needed
         if st.button("Go to my Profile"):
             switch_page("Profile")
 
     except Exception as e:
         conn.rollback()
         st.error(f"An error occurred: {e}")
-
     finally:
         cursor.close()
         conn.close()

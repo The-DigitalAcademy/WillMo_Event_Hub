@@ -1,6 +1,7 @@
 import streamlit as st
 import psycopg2 as ps
 from streamlit_extras.switch_page_button import switch_page
+from datetime import datetime
 
 # Function to connect to the PostgreSQL database server
 def connect_to_database():
@@ -36,16 +37,16 @@ def get_user_data_and_events(email):
         if user_data:
             # Fetch booked events for the user
             cursor.execute("""
-                SELECT e.event_title, e.start_date, e.start_time, e.description, l.venue_title, l.city, l.province
+                SELECT e.event_title, e.start_date, e.start_time, e.description, 
+                       l.venue_title, l.city, l.province, e.event_url, 
+                       l.google_maps
                 FROM "Events" e
-                JOIN "Bookings" b ON e.event_id = b.event_id
+                JOIN "BookingEventMap" bem ON e.event_id = bem.event_id
+                JOIN "Bookings" b ON bem.booking_id = b.booking_id
                 JOIN "Location" l ON e.location_id = l.location_id
                 WHERE b.email = %s
             """, (email,))
             booked_events = cursor.fetchall()
-
-            # Debugging: Log the booked events
-            st.write(f"Booked Events (for email: {email}): {booked_events}")
 
             return user_data, booked_events
         else:
@@ -90,16 +91,66 @@ def display_profile_page():
         st.write(f"**Contact**: {contact}")
         st.write(f"**Email**: {email}")
 
+        # Get the current date for event comparison
+        current_date = datetime.now().date()
+
         # Display booked events
-        st.write("### Your Booked Events")
-        if booked_events:
-            for event in booked_events:
-                st.write(f"### {event[0]}")
-                st.write(f"Date: {event[1]} at {event[2]}")
-                st.write(f"Location: {event[4]}, {event[5]}, {event[6]}")
-                st.write(f"Description: {event[3]}")
+        st.write("### Your Upcoming Events")
+        upcoming_events = [event for event in booked_events if event[1] >= current_date]
+        if upcoming_events:
+            for event in upcoming_events:
+                event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps = event
+
+                # Display event title and date/time
+                st.write(f"### {event_title}")
+                st.write(f"**Date**: {start_date} at {start_time}")
+
+                # Display event location (venue, city, province)
+                st.write(f"**Location**: {venue_title}, {city}, {province}")
+
+                # Display event description
+                st.write(f"**Description**: {description}")
+
+                # Display event URL if available
+                if event_url:
+                    st.write(f"**Event URL**: [Click here to view event details]({event_url})")
+
+                # Display Google Maps link if available
+                if google_maps:
+                    st.write(f"**Google Maps**: [View Location]({google_maps})")
+
+                st.markdown("---")
         else:
-            st.write("No events booked. Browse events and book your tickets!")
+            st.write("No upcoming events. Browse events and book your tickets!")
+
+        # Display past events (history)
+        st.write("### Your Event History")
+        past_events = [event for event in booked_events if event[1] < current_date]
+        if past_events:
+            for event in past_events:
+                event_title, start_date, start_time, description, venue_title, city, province, event_url, google_maps = event
+
+                # Display event title and date/time
+                st.write(f"### {event_title} (Past Event)")
+                st.write(f"**Date**: {start_date} at {start_time}")
+
+                # Display event location (venue, city, province)
+                st.write(f"**Location**: {venue_title}, {city}, {province}")
+
+                # Display event description
+                st.write(f"**Description**: {description}")
+
+                # Display event URL if available
+                if event_url:
+                    st.write(f"**Event URL**: [Click here to view event details]({event_url})")
+
+                # Display Google Maps link if available
+                if google_maps:
+                    st.write(f"**Google Maps**: [View Location]({google_maps})")
+
+                st.markdown("---")
+        else:
+            st.write("No past events found. Stay tuned for future events!")
 
         # Form to update name and contact
         st.write("### Update Your Information")
