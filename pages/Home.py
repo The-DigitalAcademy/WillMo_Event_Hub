@@ -13,15 +13,15 @@ st.title(f" Welcome, {st.session_state.get('user_name', 'User')}!")
 st.subheader("Explore upcoming events and manage your bookings.")
 
 # Navigation Buttons
-col1, col2, col3 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 with col1:
    if st.button("View Events", key="book_event"):
             switch_page("events")  # Redirect to Bookings page
 with col2:
-    if st.button("⚙️ My Profile",key="Profile"):
+    if st.button("My Profile",key="Profile"):
         st.switch_page("pages/Profile.py")  # Redirect to profile settings
 with col3:
-    if st.button("⚙️ create event",key="create_event"):
+    if st.button("Create event",key="create_event"):
         st.switch_page("pages/creating_event.py")
 
 
