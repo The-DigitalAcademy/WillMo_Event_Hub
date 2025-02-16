@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 from establish_connection import connect_to_database
 from streamlit_extras.switch_page_button import switch_page
 
@@ -42,6 +43,20 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+def display_event_image(image_path, event_title):
+    """Handles both local file paths and URLs for images with size control."""
+    if image_path:
+        if image_path.startswith("http"):
+            st.image(image_path, caption=event_title, use_container_width=False, width=200)
+        else:
+            local_image_path = os.path.join(os.getcwd(), image_path.lstrip("/"))
+            if os.path.exists(local_image_path):
+                st.image(local_image_path, caption=event_title, use_container_width=False, width=200)
+            else:
+                st.warning(f"⚠️ Image not found: {local_image_path}")
+    else:
+        st.warning("⚠️ No image available for this event.")
 
 def display_booking_page():
     st.subheader("Search and Filter Events")
@@ -103,9 +118,6 @@ def display_booking_page():
         """
 
         fallback_params = []
-        # st.write(f"Running fallback query: {fallback_query}")
-        # st.write(f"Fallback query parameters: {fallback_params}")
-
         events = fetch_events(connection, fallback_query, fallback_params)
 
     for i in range(0, len(events), 3):
@@ -115,7 +127,7 @@ def display_booking_page():
             with col:
                 with st.container():
                     st.markdown('<div class="card-container">', unsafe_allow_html=True)
-                    st.image(event["image"], use_container_width=True, caption=None, width=300)
+                    display_event_image(event["image"], event["event_title"])  # Using the new function
                     st.markdown(f'<div class="card-title">{event["event_title"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Date: {event["start_date"]}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="card-details">Time: {event["start_time"]}</div>', unsafe_allow_html=True)
@@ -125,7 +137,7 @@ def display_booking_page():
                     st.markdown(f'<div class="card-price">Price: R{event["price"]}</div>', unsafe_allow_html=True)
                     if st.button("More Details", key=f"details_{event['event_id']}"):
                         st.session_state["event_id"] = event["event_id"]
-                        switch_page("event_details")
+                        switch_page("event_details")  # Correct page name without .py
                     st.markdown('</div>', unsafe_allow_html=True)
 
 display_booking_page()

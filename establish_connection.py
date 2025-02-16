@@ -10,7 +10,7 @@ def connect_to_database():
             port='5432',
             database='willmo',
             user='postgres',
-            password='Will'
+            password=''
         )
         return connection
     except Exception as e:

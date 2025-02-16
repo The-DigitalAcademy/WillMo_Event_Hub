@@ -1,7 +1,23 @@
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
 import psycopg2
+import os
 from establish_connection import connect_to_database
+
+# Function to handle event images
+def display_event_image(image_path, event_title):
+    """Handles both local file paths and URLs for images with size control."""
+    if image_path:
+        if image_path.startswith("http"):
+            st.image(image_path, caption=event_title, use_container_width=False, width=150)
+        else:
+            local_image_path = os.path.join(os.getcwd(), image_path.lstrip("/"))
+            if os.path.exists(local_image_path):
+                st.image(local_image_path, caption=event_title, use_container_width=False, width=150)
+            else:
+                st.warning(f"⚠️ Image not found: {local_image_path}")
+    else:
+        st.warning("⚠️ No image available for this event.")
 
 # Function to check if the user is logged in
 def check_logged_in():
@@ -42,8 +58,7 @@ def display_cart():
                     event_title, event_image, price, available_quantity = "Unknown Event", None, 0, 0
 
                 with st.expander(f"Event: {event_title}", expanded=False):
-                    if event_image:
-                        st.image(event_image, width=150)
+                    display_event_image(event_image, event_title)
 
                     current_quantity = item.get("quantity", 1)
                     new_quantity = st.number_input(
