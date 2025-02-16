@@ -8,10 +8,6 @@ from streamlit_extras.switch_page_button import switch_page  # Importing the swi
 import re
 
 
-def validate_bank_code(bank_code):
-    """Validate bank code. South African bank codes are 6 digits long."""
-    return bool(re.match(r"^\d{6}$", bank_code))
-
 
 def validate_account_number(account_number):
     """Validate account number. South African account numbers are 10-12 digits long."""
@@ -173,6 +169,7 @@ def display_create_event_page():
         province, city, latitude, longitude = None, None, None, None  # Disable location input
 
     st.subheader("Banking Details")
+    
     BANK_CODES = {
         "Absa": "632005",
         "Capitec": "470010",
@@ -202,13 +199,11 @@ def display_create_event_page():
     st.write("**Bank Code**:", bank_code)
 
     if st.button("Create Event"):
-        if not validate_bank_code(bank_code):
-            st.error("Please enter a valid bank code.")
-        elif not validate_account_number(account_number):
+         if not validate_account_number(account_number):
             st.error("Please enter a valid account number.")
-        elif image is None:
+         elif image is None:
             st.error("Please upload an event image or provide an image URL.")
-        else:
+         else:
             create_event(event_title, description, start_date, start_time, capacity, quantity, price, event_url, image, province, city, category, email, bank_name, account_number, account_holder, bank_code, latitude, longitude)
 
 
