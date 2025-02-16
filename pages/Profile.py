@@ -3,6 +3,8 @@ import psycopg2 as ps
 from streamlit_extras.switch_page_button import switch_page
 from datetime import datetime
 
+
+st.set_page_config(page_title="profile", layout="wide")
 # Function to connect to the PostgreSQL database server
 def connect_to_database():
     try:
