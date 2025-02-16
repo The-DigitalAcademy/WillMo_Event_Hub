@@ -3,6 +3,7 @@ import psycopg2
 import os
 from datetime import date
 from establish_connection import connect_to_database
+from streamlit_extras.switch_page_button import switch_page
 
 # List of event categories
 event_categories = ["Online Event", "Art Event", "Social Event", "Sports", "Hybrid Event", "Festival", "Fashion Event"]
@@ -213,4 +214,6 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.header("🌟 Host Your Own Event!")
 st.sidebar.write("Did you know you can host your own event on WillMo Event Hub? Create an event now!")
-st.sidebar.button("Create Event")
+create_event_button = st.sidebar.button("Create Event")
+if create_event_button:
+    st.switch_page = "create_event" 
