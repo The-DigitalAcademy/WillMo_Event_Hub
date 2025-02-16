@@ -159,11 +159,25 @@ def display_create_event_page():
         province, city, venue_title, latitude, longitude = None, None, None, None, None
 
     st.subheader("Banking Details")
-    
-    bank_name = st.selectbox("Bank Name", ["Absa", "Capitec", "FNB", "Nedbank", "Standard Bank"])
+    bank_codes = {
+                "Absa": "632005",
+                "Capitec": "470010",
+                "FNB": "250655",
+                "Nedbank": "198765",
+                "Standard Bank": "051001",
+                "Investec": "580105",
+                "Mercantile Bank": "453145",
+                "Bidvest Bank": "462005",
+                "Rand Merchant Bank": "451005",
+                "African Bank": "470010"
+            }
+
+    bank_name = st.selectbox("Bank Name", list(bank_codes.keys()))
     account_number = st.text_input("Bank Account Number")
     account_holder = st.text_input("Account Holder Name")
-    bank_code = "000000"  # Placeholder, replace with actual bank codes if needed
+
+            # Display the bank code based on the selected bank
+    bank_code = bank_codes.get(bank_name, "000000")
     st.write("**Bank Code**:", bank_code)
 
     if st.button("Create Event"):
