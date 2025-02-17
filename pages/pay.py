@@ -39,7 +39,7 @@ def process_payment():
     st.subheader("Review Your Cart")
 
     total_cart_price = 0
-    event_ids = []  # Track event_ids for insertion into "Bookings"
+    event_ids = [] 
 
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -70,7 +70,7 @@ def process_payment():
 
         st.markdown("---")
         total_cart_price += total_price
-        event_ids.append(event_id)  # Add event_id to the list
+        event_ids.append(event_id) 
 
     st.write(f"**Total Cart Price**: R{total_cart_price}")
 
